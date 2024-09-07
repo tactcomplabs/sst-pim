@@ -9,7 +9,7 @@
 #
 
 # SST Libs
-SSTOPTS += --add-lib-path=$(REVHOME)/sstcomp/AppGen
+SSTOPTS += --add-lib-path=$(PROJHOME)/sstcomp/AppGen
 
 # Output Directories
 OUTDIR = appx-output

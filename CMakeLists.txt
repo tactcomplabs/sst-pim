@@ -89,11 +89,11 @@ include_directories(SSTPIM_INCLUDE ${SSTPIM_INCLUDE_PATH})
 #---------------------------------------------
 
 #-- Testing Options
-#option(SSTPIM_ENABLE_TESTING "Enable Testing" OFF)
-#if(SSTPIM_ENABLE_TESTING)
-#  enable_testing()
-#  add_subdirectory(test)
-#endif()
+option(SSTPIM_ENABLE_TESTING "Enable Testing" ON)
+if(SSTPIM_ENABLE_TESTING)
+ enable_testing()
+ add_subdirectory(test)
+endif()
 
 #-- Custom Commands
 add_custom_target(uninstall COMMAND

@@ -25,7 +25,7 @@ else
 endif
 
 # SST configuration
-SSTCFG ?= $(PWD)/pim-simple.py
+SSTCFG ?= $(PROJHOME)/test/configs/pim-simple.py
 
 # Path to pim backend sst lib
 SSTOPTS += --add-lib-path=$(PROJHOME)/sstcomp/PIMBackend
