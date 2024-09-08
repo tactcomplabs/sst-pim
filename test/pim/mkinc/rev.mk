@@ -52,10 +52,12 @@ compile: $(EXES) $(DIASMS)
 CC=riscv64-unknown-elf-g++
 OBJDUMP   = ${RVOBJDUMP} --source -l -dC -Mno-aliases
 
-# Rev Headers
-INCLUDE  := -I$(REVHOME)/sstcomp/util
+# Rev headers
 INCLUDE  += -I$(REVHOME)/common/syscalls
 INCLUDE  += -I$(REVHOME)/test/include
+
+# PIM headers
+INCLUDE  += -I$(PROJHOME)/sstcomp/include
 
 ifdef DEBUG
  CCOPT       ?= -O0 -g -DDEBUG=1

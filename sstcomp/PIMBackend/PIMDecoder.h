@@ -90,7 +90,7 @@ struct PIMDecodeInfo {
 class PIMDecoder {
 public:
   // Important: must match RevMem::IOMemoryHolePunch() must match
-  const uint64_t SEG_SIZE = PIM_DRAM_SIZE * sizeof( uint64_t );
+  const uint64_t SEG_SIZE = DRAM_BASE * sizeof( uint64_t );
   PIMDecoder( uint64_t node = 0 );
   PIMDecodeInfo decode( const uint64_t& addr );
 

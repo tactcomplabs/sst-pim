@@ -14,9 +14,9 @@ PIMDecoder::PIMDecoder( uint64_t _node ) : node( _node ) {
   assert(node==0);
   // TODO nodeOffset = node * NODE_OFFSET_MULTIPLIER
   nodeOffset=0;
-  PIMSegs.emplace_back( std::make_shared<PIMMemSegment>( PIM_ACCESS_TYPE::DRAM, PIM_DRAM, SEG_SIZE ) );
-  PIMSegs.emplace_back( std::make_shared<PIMMemSegment>( PIM_ACCESS_TYPE::SRAM, PIM_SRAM + nodeOffset, SEG_SIZE ) );
-  PIMSegs.emplace_back( std::make_shared<PIMMemSegment>( PIM_ACCESS_TYPE::F0, PIM_FUNCTION_0 + nodeOffset, SEG_SIZE ) );
+  PIMSegs.emplace_back( std::make_shared<PIMMemSegment>( PIM_ACCESS_TYPE::DRAM, DRAM_BASE, SEG_SIZE ) );
+  PIMSegs.emplace_back( std::make_shared<PIMMemSegment>( PIM_ACCESS_TYPE::SRAM, SRAM_BASE + nodeOffset, SEG_SIZE ) );
+  PIMSegs.emplace_back( std::make_shared<PIMMemSegment>( PIM_ACCESS_TYPE::F0, FUNC_BASE + nodeOffset, SEG_SIZE ) );
 };
 
 PIMDecodeInfo PIMDecoder::decode( const uint64_t& addr ) {

@@ -37,17 +37,17 @@ void AppTransactor::generate( MirandaRequestQueue<GeneratorRequest*>* q ) {
   assert( appLink->q.size() == 1 );
   AppEvent e = appLink->q.front();
   appLink->q.pop();
-  if( e.cmd != AppCmd::NOP ) {  // TODO there should be no NOPs
+  if( e.cmd != Cmd::NOP ) {  // TODO there should be no NOPs
     std::stringstream s;
     s << e;
     out->verbose( CALL_INFO, 10, 0, "Processing %s\n", s.str().c_str() );
   }
   switch( e.cmd ) {
-  case AppCmd::DONE: appLink->done = true; break;
-  case AppCmd::READ: q->push_back( new MemoryOpRequest( e.address, 8, ReqOperation::READ ) ); break;
-  case AppCmd::WRITE: q->push_back( new MemoryOpRequest( e.address, 8, ReqOperation::WRITE, e.data ) ); break;
-  case AppCmd::NOP: break;
-  default: out->fatal( CALL_INFO, -1, "Undefined AppCmd %d", static_cast<int>( e.cmd ) ); break;
+  case Cmd::DONE: appLink->done = true; break;
+  case Cmd::READ: q->push_back( new MemoryOpRequest( e.address, 8, ReqOperation::READ ) ); break;
+  case Cmd::WRITE: q->push_back( new MemoryOpRequest( e.address, 8, ReqOperation::WRITE, e.data ) ); break;
+  case Cmd::NOP: break;
+  default: out->fatal( CALL_INFO, -1, "Undefined Cmd %d", static_cast<int>( e.cmd ) ); break;
   }
 
   //std::this_thread::sleep_for(std::chrono::milliseconds(50));

@@ -26,10 +26,10 @@ void SST::AppGen::App::setOutput( Output* _out ) {
 void App::worker_thread() {
   theApp();
   // Finished
-  send( AppCmd::DONE, 0, 0 );
+  send( Cmd::DONE, 0, 0 );
 }
 
-void SST::AppGen::App::send( AppCmd cmd, uint64_t address, uint64_t data ) {
+void SST::AppGen::App::send( Cmd cmd, uint64_t address, uint64_t data ) {
   std::unique_lock lk( appLink->m );
   appLink->cv.wait( lk, [this] { return appLink->q.empty(); } );
   assert( appLink->q.size() == 0 );
@@ -37,7 +37,7 @@ void SST::AppGen::App::send( AppCmd cmd, uint64_t address, uint64_t data ) {
   appLink->q.push( e );
   std::stringstream s;
   s << e;
-  if( e.cmd != AppCmd::NOP ) {
+  if( e.cmd != Cmd::NOP ) {
     out->verbose( CALL_INFO, 3, 0, "App thread sending %s\n", s.str().c_str() );
   }
   lk.unlock();
@@ -50,7 +50,7 @@ int SST::AppGen::App::receive( uint64_t& data ) {
   // TODO throttle generate to not be called when there are outstanding loads (use dependencies?)
   int timeout = 0x100000;
   do {
-    send( AppCmd::NOP, timeout, 0 );
+    send( Cmd::NOP, timeout, 0 );
   } while( --timeout > 0 && appLink->loadQ.size() == 0 );
 
   if( appLink->loadQ.size() == 0 )

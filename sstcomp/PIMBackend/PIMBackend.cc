@@ -104,7 +104,7 @@ PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( i
 
   // TODO multiple controllers per memory
   uint64_t Loff = 0;
-  spdBase       = PIM_SRAM + Loff;
+  spdBase       = SRAM_BASE + Loff;
 }
 
 PIMBackend::~PIMBackend() {

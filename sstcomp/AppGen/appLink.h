@@ -15,28 +15,28 @@
 #include <queue>
 #include <string>
 #include <thread>
+#include "pimdef.h"
 
-namespace SST {
-namespace AppGen {
+using namespace SST::PIM;
 
-enum class AppCmd { NOP, READ, WRITE, DONE };
+namespace SST::AppGen {
 
 struct AppEvent {
-  AppCmd   cmd;
+  Cmd   cmd;
   uint64_t address;
   uint64_t data;
 
-  AppEvent( AppCmd _cmd, uint64_t _address, uint64_t _data ) : cmd( _cmd ), address( _address ), data( _data ) {}
+  AppEvent( Cmd _cmd, uint64_t _address, uint64_t _data ) : cmd( _cmd ), address( _address ), data( _data ) {}
 
   friend std::ostream& operator<<( std::ostream& os, const AppEvent& e ) {
     std::string c;
-    c = e.cmd == AppCmd::NOP   ? "NOP" :
-        e.cmd == AppCmd::READ  ? "READ" :
-        e.cmd == AppCmd::WRITE ? "WRITE" :
-        e.cmd == AppCmd::DONE  ? "DONE" :
+    c = e.cmd == Cmd::NOP   ? "NOP" :
+        e.cmd == Cmd::READ  ? "READ" :
+        e.cmd == Cmd::WRITE ? "WRITE" :
+        e.cmd == Cmd::DONE  ? "DONE" :
                                  "?";
     os << c << " 0x" << std::hex << e.address;
-    if( e.cmd == AppCmd::WRITE )
+    if( e.cmd == Cmd::WRITE )
       os << " 0x" << std::hex << e.data;
     return os;
   }
@@ -54,6 +54,5 @@ public:
   bool                     done = false;
   std::vector<std::string> args;
 };
-}  // namespace AppGen
-}  // namespace SST
+}  // namespace AppGen::SST
 #endif  //_SST_APPGEN_APP_LINK_H
