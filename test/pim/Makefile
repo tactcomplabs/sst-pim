@@ -15,7 +15,10 @@
 PROJHOME ?= $(realpath ../..)
 
 # PIM Compatible REV
-REVHOME ?= $(HOME)/work/rev-pim
+# PIM_REV_HOME ?= $(HOME)/work/rev-pim
+ifndef PIM_REV_HOME
+ $(error PIM_REV_HOME must be set to a PIM compatable REV)
+endif
 
 # SST
 ifdef VALGRIND

@@ -9,7 +9,7 @@
 #
 
 # REV paths
-REVLIBPATH ?= $(REVHOME)/build/src
+REVLIBPATH ?= $(PIM_REV_HOME)/build/src
 
 # Test source code
 SRCDIR = ./rev-test-src
@@ -53,8 +53,8 @@ CC=riscv64-unknown-elf-g++
 OBJDUMP   = ${RVOBJDUMP} --source -l -dC -Mno-aliases
 
 # Rev headers
-INCLUDE  += -I$(REVHOME)/common/syscalls
-INCLUDE  += -I$(REVHOME)/test/include
+INCLUDE  += -I$(PIM_REV_HOME)/common/syscalls
+INCLUDE  += -I$(PIM_REV_HOME)/test/include
 
 # PIM headers
 INCLUDE  += -I$(PROJHOME)/sstcomp/include

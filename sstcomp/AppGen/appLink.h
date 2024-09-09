@@ -22,21 +22,21 @@ using namespace SST::PIM;
 namespace SST::AppGen {
 
 struct AppEvent {
-  Cmd   cmd;
+  SRAM_CMD   cmd;
   uint64_t address;
   uint64_t data;
 
-  AppEvent( Cmd _cmd, uint64_t _address, uint64_t _data ) : cmd( _cmd ), address( _address ), data( _data ) {}
+  AppEvent( SRAM_CMD _cmd, uint64_t _address, uint64_t _data ) : cmd( _cmd ), address( _address ), data( _data ) {}
 
   friend std::ostream& operator<<( std::ostream& os, const AppEvent& e ) {
     std::string c;
-    c = e.cmd == Cmd::NOP   ? "NOP" :
-        e.cmd == Cmd::READ  ? "READ" :
-        e.cmd == Cmd::WRITE ? "WRITE" :
-        e.cmd == Cmd::DONE  ? "DONE" :
+    c = e.cmd == SRAM_CMD::NOP   ? "NOP" :
+        e.cmd == SRAM_CMD::READ  ? "READ" :
+        e.cmd == SRAM_CMD::WRITE ? "WRITE" :
+        e.cmd == SRAM_CMD::DONE  ? "DONE" :
                                  "?";
     os << c << " 0x" << std::hex << e.address;
-    if( e.cmd == Cmd::WRITE )
+    if( e.cmd == SRAM_CMD::WRITE )
       os << " 0x" << std::hex << e.data;
     return os;
   }

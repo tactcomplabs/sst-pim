@@ -22,7 +22,7 @@ void AppTest::theApp() {
   uint64_t readBuf = 0;
   // read PIM_ID
   uint64_t pimBase =  static_cast<uint64_t>(PIM::SRAM_BASE);
-  send( Cmd::READ, pimBase, 0 );
+  send( SRAM_CMD::READ, pimBase, 0 );
   rc = receive( readBuf );
   if( rc )
     out->fatal( CALL_INFO, -1, "receiving PIM ID read failed\n" );
@@ -30,7 +30,7 @@ void AppTest::theApp() {
 
   // write/read some other memory
   for( uint64_t addr = 0x20000; addr < 0x20080; addr += 8 )
-    send( Cmd::WRITE, addr, ( addr << 16 ) + 0xaced );
+    send( SRAM_CMD::WRITE, addr, ( addr << 16 ) + 0xaced );
   for( uint64_t addr = 0x20000; addr < 0x20080; addr += 8 )
-    send( Cmd::READ, addr, 0 );
+    send( SRAM_CMD::READ, addr, 0 );
 }

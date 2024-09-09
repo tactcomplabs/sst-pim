@@ -24,7 +24,7 @@ public:
 
   // Syncrhonized access functions invoked by the derived application.
   // Making these public to allow runtime to access them using App* pointer.
-  void send( PIM::Cmd cmd, uint64_t address, uint64_t data );
+  void send( PIM::SRAM_CMD cmd, uint64_t address, uint64_t data );
   int  receive( uint64_t& data );
 
 private:

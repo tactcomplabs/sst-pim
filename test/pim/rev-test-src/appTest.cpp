@@ -22,13 +22,13 @@
 #undef assert
 #define assert TRACE_ASSERT
 
-// rev_fast_print is limited to 6 simple numeric parameters
+// rev_fast_print is limited to a format string and 6 simple numeric parameters
 #define printf rev_fast_print
 
 using namespace SST;
 
-void send( PIM::Cmd cmd, uint64_t address, uint64_t data ) 
-{}
+void send( PIM::SRAM_CMD cmd, uint64_t address, uint64_t data ) {
+}
 
 int receive( uint64_t& data ) {
   return 0;
@@ -39,19 +39,19 @@ int theApp() {
   uint64_t readBuf = 0;
   // read PIM_ID
   uint64_t pimBase = PIM::SRAM_BASE;
-  send( PIM::Cmd::READ, pimBase, 0 );
+  send( PIM::SRAM_CMD::READ, pimBase, 0 );
   rc = receive( readBuf );
   if( rc ) {
-    rev_fast_print("receiving PIM ID read failed\n");
+    rev_fast_print("PIM ID read failed\n");
     return 1;
   }
   rev_fast_print("PIM ID read as 0x%" PRIx64 "\n", readBuf );
 
   // write/read some other memory
   for( uint64_t addr = 0x20000; addr < 0x20080; addr += 8 )
-    send( PIM::Cmd::WRITE, addr, ( addr << 16 ) + 0xaced );
+    send( PIM::SRAM_CMD::WRITE, addr, ( addr << 16 ) + 0xaced );
   for( uint64_t addr = 0x20000; addr < 0x20080; addr += 8 )
-    send( PIM::Cmd::READ, addr, 0 );
+    send( PIM::SRAM_CMD::READ, addr, 0 );
 
   rev_fast_print("Tada!\n");
   return 0;
