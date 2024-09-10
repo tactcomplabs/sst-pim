@@ -46,7 +46,7 @@ verbose = {
     "rev_mem_ctrl"  :  0,  # 1-4:nada?, 5-10:info
     "l1"            :  0,  # 0[fatal error only], 1[warnings], 2[full state dump on fatal error]
     "l2"            :  0,  # 0[fatal error only], 1[warnings], 2[full state dump on fatal error]
-    "mem"           :  0,  # 3: PIM
+    "mem"           :  3,  # 3: PIM
     "miranda"       :  1,  # 1: Application messages, 3: sequencer
 }
 
@@ -123,7 +123,7 @@ SUPPORTED_MEMORY_MODELS = ["simpleMem","dramsim3"]
 MEMORY_MODEL = os.getenv("MEMORY_MODEL","simpleMem")
 MEMORY_CONTROLLER = "PIM.PIMMemController"
 
-PIM_TYPE = os.getenv("PIM_TYPE","1")  # 1:test, 2:reserved, 3:generic
+PIM_TYPE = os.getenv("PIM_TYPE","0")  # 0:none, 1:test, 2:reserved, 3:generic
 print(f"PIM_TYPE={PIM_TYPE}")
 
 if MEMORY_MODEL not in SUPPORTED_MEMORY_MODELS:

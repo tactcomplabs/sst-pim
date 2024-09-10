@@ -22,8 +22,9 @@
 #undef assert
 #define assert TRACE_ASSERT
 
+#define printf(...)
 // rev_fast_print is limited to a format string and 6 simple numeric parameters
-#define printf rev_fast_print
+//#define printf rev_fast_print
 
 using namespace SST;
 
@@ -42,10 +43,10 @@ int theApp() {
   send( PIM::SRAM_CMD::READ, pimBase, 0 );
   rc = receive( readBuf );
   if( rc ) {
-    rev_fast_print("PIM ID read failed\n");
+    printf("PIM ID read failed\n");
     return 1;
   }
-  rev_fast_print("PIM ID read as 0x%" PRIx64 "\n", readBuf );
+  printf("PIM ID read as 0x%" PRIx64 "\n", readBuf );
 
   // write/read some other memory
   for( uint64_t addr = 0x20000; addr < 0x20080; addr += 8 )
@@ -53,7 +54,7 @@ int theApp() {
   for( uint64_t addr = 0x20000; addr < 0x20080; addr += 8 )
     send( PIM::SRAM_CMD::READ, addr, 0 );
 
-  rev_fast_print("Tada!\n");
+  printf("Tada!\n");
   return 0;
 }
 

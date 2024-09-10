@@ -37,7 +37,7 @@ all: $(TARGS)
 run: $(LOGS)
 
 # Test Specific Customization
-$(OUTDIR)/AppxTest/run.log:             OPTS = APP=AppxTest PIM_TYPE=1 NODES=1
+$(OUTDIR)/AppxTest/run.log:             OPTS = APP=AppxTest PIM_TYPE=1
 
 # The magical run command
 .PHONY: %.log

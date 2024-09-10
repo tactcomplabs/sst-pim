@@ -28,7 +28,7 @@ else
 endif
 
 # SST configuration
-SSTCFG ?= $(PROJHOME)/test/configs/pim-simple.py
+SSTCFG ?= $(PROJHOME)/test/configs/1node.py
 
 # Path to pim backend sst lib
 SSTOPTS += --add-lib-path=$(PROJHOME)/sstcomp/PIMBackend

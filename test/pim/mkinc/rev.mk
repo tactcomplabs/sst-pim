@@ -8,6 +8,9 @@
 # See LICENSE in the top level directory for licensing details
 #
 
+# PIM Type (0:none, 1:test, 2:reserved, 3:generic)
+export PIM_TYPE=1
+
 # REV paths
 REVLIBPATH ?= $(PIM_REV_HOME)/build/src
 
@@ -21,7 +24,7 @@ SSTOPTS += --add-lib-path=$(REVLIBPATH)
 OUTDIR = rev-output
 
 # Test Selection
-PIM_TESTS += appTest
+PIM_TESTS += $(basename $(wildcard rev-test-src/*.cpp))
 
 # PIM MPI tests
 # PIM_MPI_TESTS += 
@@ -38,10 +41,11 @@ TLIST ?= $(ALL_TESTS)
 SRCS   := $(basename $(notdir $(wildcard $(SRCDIR)/*.cpp)))
 EXES   := $(addprefix $(OUTDIR)/bin/,$(addsuffix .exe,$(SRCS)))
 DIASMS := $(patsubst %.exe,%.dis,$(EXES))
+SECTIONS := $(patsubst %.exe,%.sections,$(EXES))
 
 # Targets
 LOGS   := $(addsuffix /run.log,$(addprefix $(OUTDIR)/,$(TLIST)))
-TARGS  := $(LOGS) $(EXES) $(DIASMS)
+TARGS  := $(LOGS) $(EXES) $(DIASMS) $(SECTIONS)
 
 # Recipes
 all: $(TARGS)
@@ -50,6 +54,7 @@ compile: $(EXES) $(DIASMS)
 
 # Rev toolchain
 CC=riscv64-unknown-elf-g++
+LD=riscv64-unknown-elf-ld
 OBJDUMP   = ${RVOBJDUMP} --source -l -dC -Mno-aliases
 
 # Rev headers
@@ -71,8 +76,9 @@ ifdef DEBUG_MODE
 endif
 
 # Configuration
-WFLAGS    := -Werror -Wall -Wextra -Wuninitialized -pedantic-errors
+WFLAGS    := -Wall -Wextra -Wuninitialized -pedantic-errors
 WFLAGS    += -Wno-unused-function -Wno-unused-parameter
+#WFLAGS    += -Werror
 # DEBUG_FLAGS := -DDEBUG_MODE
 FLAGS     := $(CCOPT) $(WFLAGS) $(DEBUG_FLAGS) -static -lm -fpermissive
 ARCH      := rv64gc
@@ -101,9 +107,15 @@ ARCH      := rv64gc
 %.dis: %.exe
 	$(OBJDUMP) $< > $@
 
-$(OUTDIR)/bin/%.exe: $(SRCDIR)/%.cpp
+%.sections: %.exe
+	${RVOBJDUMP} -s $< > $@
+
+$(OUTDIR)/bin/%.exe: $(OUTDIR)/bin/%.o $(SRCDIR)/pim.lds
+	$(LD) -o $@ -T $(SRCDIR)/pim.lds $<
+
+$(OUTDIR)/bin/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(@D)
-	$(CC) $(FLAGS) -o $@ $< -march=$(ARCH) $(ABI) $(INCLUDE) $(LIBS)
+	$(CC) $(FLAGS) -o $@ -g -c $< -march=$(ARCH) $(ABI) $(INCLUDE) $(LIBS)
 
 # workaround for rev_openat on ubuntu
 .PHONY: %.dat
