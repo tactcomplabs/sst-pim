@@ -68,7 +68,7 @@ ifdef DEBUG
  CCOPT       ?= -O0 -g -DDEBUG=1
  DEBUG_MODE   = 1
 else
- CCOPT       ?= -O2
+ CCOPT       ?= -O2 -g
 endif
 
 ifdef DEBUG_MODE
@@ -86,7 +86,7 @@ ARCH      := rv64gc
 
 # Test Specific Customization
 # if REV_EXE is not specified in OPTS it will default to the test name exe file
-#$(OUTDIR)/appTest/run.log: REV_EXE=$(OUTDIR)/bin/appTest.exe
+# $(OUTDIR)/appTest1/run.log: OPTS += ARGS M
 
 # The magical run command
 %.log: $(SSTCFG) compile
