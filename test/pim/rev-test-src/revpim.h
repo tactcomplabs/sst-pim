@@ -23,25 +23,32 @@ namespace revpim {
 volatile uint64_t func[PIM::FUNC_SIZE]       __attribute__((section(".func_base")));
 volatile uint64_t usrfunc[PIM::USRFUNC_SIZE] __attribute__((section(".usrfunc_base")));
 
-void pim_init(PIM::FUNC f, uint64_t p0=0, uint64_t p1=0, uint64_t p2=0) {
-    int f_idx = static_cast<int>(f);
+//
+// Initialization functions
+//
+const unsigned NUM_REV_FUNC_PARAMS = PIM::NUM_FUNC_PARAMS;
+void init(PIM::FUNC f, uint64_t p0=0, uint64_t p1=0, uint64_t p2=0) {
+    unsigned f_idx = static_cast<unsigned>(f);
     assert(f_idx<PIM::FUNC_SIZE);
     // initialization packet sent sequentially to same MMIO address
     func[f_idx] = static_cast<uint64_t>(PIM::FUNC_CMD::INIT);
     func[f_idx] = p0;
     func[f_idx] = p1;
     func[f_idx] = p2;
-    func[f_idx] = static_cast<uint64_t>(PIM::FUNC_CMD::EOD);
 }
- 
- void pim_run(PIM::FUNC f) {
-    int f_idx = static_cast<int>(f);
+
+void init(PIM::FUNC f, void* ptr0, void* ptr1, size_t sz) {
+    init(f, reinterpret_cast<uint64_t>(ptr0), reinterpret_cast<uint64_t>(ptr1), reinterpret_cast<uint64_t>(sz));
+}
+
+void pim_run(PIM::FUNC f) {
+    unsigned f_idx = static_cast<unsigned>(f);
     assert(f_idx<PIM::FUNC_SIZE);
     func[f_idx] = static_cast<uint64_t>(PIM::FUNC_CMD::RUN);
- }
+}
 
- void pim_finish(PIM::FUNC f) {
-    int f_idx = static_cast<int>(f);
+void pim_finish(PIM::FUNC f) {
+    unsigned f_idx = static_cast<unsigned>(f);
     assert(f_idx<PIM::FUNC_SIZE);
     PIM::FSTATE state = static_cast<PIM::FSTATE>(func[f_idx]);
     if (state == PIM::FSTATE::INVALID) {
@@ -52,7 +59,7 @@ void pim_init(PIM::FUNC f, uint64_t p0=0, uint64_t p1=0, uint64_t p2=0) {
         state = static_cast<PIM::FSTATE>(func[f_idx]);
     }
     return;
- }
+}
 
 } //namespace revpim
 

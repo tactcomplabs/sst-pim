@@ -21,14 +21,14 @@ enum class PIM_ACCESS_TYPE : unsigned {
   NONE = 0x0,
   SRAM = 0x2,
   DRAM = 0x3,
-  F0   = 0x10,
+  FUNC = 0x10,
 };
 
 const std::map<PIM_ACCESS_TYPE, std::string> PIMTYPE2string{
   {PIM_ACCESS_TYPE::NONE, "NONE"},
   {PIM_ACCESS_TYPE::SRAM, "SRAM"},
   {PIM_ACCESS_TYPE::DRAM, "DRAM"},
-  {PIM_ACCESS_TYPE::F0,   "F0"},
+  {PIM_ACCESS_TYPE::FUNC, "FUNC"},
 };
 
 enum class PIM_FUNCTION_CONTROL { EVENTS = 0, OPERANDS = 1, EXEC = 2, LOCK = 3 };

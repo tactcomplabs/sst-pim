@@ -39,6 +39,15 @@ private:
   bool                                       ctl_locked = false;
   void                                       function_write( unsigned offset );
 
+  // Primary state machine
+  struct func_state_t {
+    uint64_t params[NUM_FUNC_PARAMS] = {0};
+    FSTATE fstate = FSTATE::INVALID;
+    bool lock = false;
+    int counter = 0;
+  };
+  func_state_t func_state[FUNC_SIZE] = {};
+
   // dma sequencer
   class SimpleDMA {
   public:

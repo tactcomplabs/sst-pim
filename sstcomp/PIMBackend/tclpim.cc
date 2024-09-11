@@ -59,11 +59,14 @@ void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload )
       CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[spdIndex]
     );
   } else {
-    assert( false );  // F0 is write-only
+    assert( false );  // FUNC is write-only
   }
 }
 
 void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload ) {
+  
+  output->verbose(CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE A=0x%" PRIx64 "\n", id, addr);
+
   // TODO: Fix elf / linker to not load these
   if (numBytes !=8 ) {
     output->verbose(CALL_INFO, 3, 0, "Warning: Dropping MMIO write to function handler with numBytes=%d\n", numBytes );
@@ -71,7 +74,7 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
   }
   PIMDecodeInfo info = pimDecoder->decode( addr );
   if( info.pimAccType == PIM_ACCESS_TYPE::SRAM ) {
-    // 8 8-byte entries. Byte Addressable (memcpy -O0 does byte copy).
+    // Eight 8-byte entries. Byte Addressable (memcpy -O0 does byte copy).
     unsigned offset = ( addr & 0x38ULL ) >> 3;
     unsigned byte   = ( addr & 0x7 );
     assert( ( byte + numBytes ) <= 8 );  // 8 byte aligned only
@@ -82,18 +85,21 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
     output->verbose(
       CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[offset]
     );
-  } else if( info.pimAccType == PIM_ACCESS_TYPE::F0 ) {
-    // Functions
-    unsigned offset = ( addr & 0x38ULL ) >> 3;
-    unsigned byte   = ( addr & 0x7 );
+  } else if( info.pimAccType == PIM_ACCESS_TYPE::FUNC ) {
+    // 8 functions
+    unsigned f_idx = ( addr >> 3 ) & 0x7;
+    assert(f_idx < SST::PIM::FUNC_SIZE );
+    assert( (addr & 0x7) == 0 ); // byte aligned
     assert( numBytes == 8 );
-    assert( byte == 0 );
-    uint8_t* p = (uint8_t*) ( &( ctl_buf ) );
-    for( int i = 0; i < numBytes; i++ ) {
-      p[byte + i] = payload->at( i );
-    }
-    output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE F0 A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, ctl_buf );
-    function_write( offset );
+
+    // Grab the payload
+    uint64_t data = 0;
+    uint8_t* p = (uint8_t*) ( &data );
+    for( int i = 0; i < numBytes; i++ )
+      p[i] = payload->at( i );
+  
+    output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE FUNCTION[%d] D=0x%" PRIx64 "\n", f_idx, id, data );
+    //(function_write[f_idx])( data );
   } else {
     assert( false );
   }

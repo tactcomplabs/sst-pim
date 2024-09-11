@@ -20,15 +20,14 @@
 //#define DO_LOOP 1
 //#define DO_MEMCPY 1
 #define DO_PIM 1
-// TODO link stdlib so we can use args to select algorithm
 
 // Globals
 const int xfr_size = 256;  // dma transfer size in dwords
 uint64_t check_data[xfr_size];
 #if 1
-volatile uint64_t sram[64] __attribute__((section(".pimsram")));
-volatile uint64_t dram_src[xfr_size] __attribute__((section(".pimdram")));
-volatile uint64_t dram_dst[xfr_size] __attribute__((section(".pimdram")));
+uint64_t sram[64] __attribute__((section(".pimsram")));
+uint64_t dram_src[xfr_size] __attribute__((section(".pimdram")));
+uint64_t dram_dst[xfr_size] __attribute__((section(".pimdram")));
 #else
 uint64_t sram[64];
 uint64_t dram_src[xfr_size];
@@ -73,6 +72,7 @@ size_t theApp() {
 size_t theApp() {
   size_t time1, time2;
   REV_TIME( time1 );
+  revpim::init(PIM::FUNC::F1, (void*)dram_dst, (void*)dram_src, xfr_size*sizeof(uint64_t));
   // pim_init(F1, dram_dst, dram_src, xfr_size*sizeof(uint64_t))
   // pim_start(F1)
   // pim_wait(F1)

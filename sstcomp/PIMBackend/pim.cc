@@ -78,7 +78,7 @@ void TestPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload 
       CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[spdIndex]
     );
   } else {
-    assert( false );  // F0 is write-only
+    assert( false );  // FUNC is write-only
   }
 }
 
@@ -97,7 +97,7 @@ void TestPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload
     output->verbose(
       CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[offset]
     );
-  } else if( info.pimAccType == PIM_ACCESS_TYPE::F0 ) {
+  } else if( info.pimAccType == PIM_ACCESS_TYPE::FUNC ) {
     // 4 entries, write-only, DWORD addressable
     // These have hardware effects.
     unsigned offset = ( addr & 0x38ULL ) >> 3;
@@ -108,7 +108,7 @@ void TestPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload
     for( int i = 0; i < numBytes; i++ ) {
       p[byte + i] = payload->at( i );
     }
-    output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE F0 A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, ctl_buf );
+    output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE FUNC A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, ctl_buf );
     ctl_write( offset );
   } else {
     assert( false );
@@ -118,7 +118,7 @@ void TestPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload
 void TestPIM::ctl_write( unsigned offset ) {
   assert( offset < 4 );
   PIM_FUNCTION_CONTROL ctloff = static_cast<PIM_FUNCTION_CONTROL>( offset );
-  //cout << "F0[" << PIM_OFFSET2string.at(ctloff) << "] <- 0x" << hex << ctl_buf << endl;
+  //cout << "FUNC[" << PIM_OFFSET2string.at(ctloff) << "] <- 0x" << hex << ctl_buf << endl;
   switch( ctloff ) {
   case PIM_FUNCTION_CONTROL::EVENTS: ctl_event = ctl_buf; break;
   case PIM_FUNCTION_CONTROL::EXEC:

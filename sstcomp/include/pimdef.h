@@ -32,11 +32,14 @@ namespace SST::PIM
     enum class SRAM_CMD : int { NOP, READ, WRITE, DONE };
     
     // FUNC Access
-    enum class FUNC_CMD : int { INIT, RUN, FINISH, EOD };
+    enum class FUNC_CMD : int { INIT, RUN, FINISH };
 
     // Enumerated functions
     enum class FUNC    : int { F0, F1, F2, F3, F4, F5, F6, F7};
     enum class USRFUNC : int { F0, F1, F2, F3, F4, F5, F6, F7};
+
+    // Number of funtion params to send on init
+    const unsigned NUM_FUNC_PARAMS = 3;
 
     // Function states
     enum class FSTATE  : int { INVALID, INITIALIZED, RUNNING, DONE };
