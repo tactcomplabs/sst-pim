@@ -17,6 +17,7 @@
 #include <sst/core/sst_config.h>
 #include <sst/core/link.h>
 #include "PIMBackend.h"
+#include "TCLPIM.h"
 #include "sst/elements/memHierarchy/util.h"
 #include "kgdbg.h"
 // clang-format on
@@ -90,7 +91,8 @@ PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( i
     pimsim = new TestPIM( node_id, &pimOutput );
     pimOutput.verbose( CALL_INFO, 1, 0, "pim_type=%" PRIu32 " Node=%" PRIu32 " Using Test Mode\n", PIM_TYPE_TEST, node_id );
   } else if( pim_type == PIM_TYPE_TCL ) {
-    pimOutput.fatal( CALL_INFO, -1, "PIM_TYPE_TCL is under construction\n" );
+    pimsim = new TCLPIM( node_id, &pimOutput );
+    pimOutput.verbose( CALL_INFO, 1, 0, "pim_type=%" PRIu32 " Node=%" PRIu32 " Using TCL PIM\n", PIM_TYPE_TCL, node_id );
   } else if( pim_type == PIM_TYPE_RESERVE ) {
     pimOutput.fatal( CALL_INFO, -1, "PIM_TYPE_RESERVED not supported\n" );
   } else {
