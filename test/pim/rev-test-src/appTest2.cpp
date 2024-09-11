@@ -10,33 +10,25 @@
 
 // Standard includes
 #include <cinttypes>
+#include <cstdlib>
 #include <cstring>
 
 // PIM definitions
-#include "pimdef.h"
+#include "revpim.h"
 
-// REV includes
-#include "rev-macros.h"
-#include "syscalls.h"
+// Select one and only one
+//#define DO_LOOP 1
+//#define DO_MEMCPY 1
+#define DO_PIM 1
+// TODO link stdlib so we can use args to select algorithm
 
-#undef assert
-#define assert TRACE_ASSERT
-
-//rev_fast_print limited to a format string, 6 simple numeric parameters, 1024 char max output
-#define printf rev_fast_printf
-//#define printf(...)
-
-#define REV_TIME(X) do { asm volatile( " rdtime %0" : "=r"( X ) ); } while (0)
-
-using namespace SST;
-
+// Globals
 const int xfr_size = 256;  // dma transfer size in dwords
-
 uint64_t check_data[xfr_size];
 #if 1
-uint64_t sram[64] __attribute__((section(".pimsram")));
-uint64_t dram_src[xfr_size] __attribute__((section(".pimdram")));
-uint64_t dram_dst[xfr_size] __attribute__((section(".pimdram")));
+volatile uint64_t sram[64] __attribute__((section(".pimsram")));
+volatile uint64_t dram_src[xfr_size] __attribute__((section(".pimdram")));
+volatile uint64_t dram_dst[xfr_size] __attribute__((section(".pimdram")));
 #else
 uint64_t sram[64];
 uint64_t dram_src[xfr_size];
@@ -56,7 +48,6 @@ int configure() {
   return time2 - time1;
 }
 
-//#define DO_LOOP 1
 #if DO_LOOP
 size_t theApp() {
   size_t time1, time2;
@@ -68,11 +59,23 @@ size_t theApp() {
 }
 #endif
 
-#define DO_MEMCPY 1
 #if DO_MEMCPY
 size_t theApp() {
   size_t time1, time2;
   REV_TIME( time1 );
+  memcpy(dram_dst, dram_src, xfr_size*sizeof(uint64_t));
+  REV_TIME( time2 );
+  return time2 - time1;
+}
+#endif
+
+#if DO_PIM
+size_t theApp() {
+  size_t time1, time2;
+  REV_TIME( time1 );
+  // pim_init(F1, dram_dst, dram_src, xfr_size*sizeof(uint64_t))
+  // pim_start(F1)
+  // pim_wait(F1)
   memcpy(dram_dst, dram_src, xfr_size*sizeof(uint64_t));
   REV_TIME( time2 );
   return time2 - time1;
@@ -96,7 +99,6 @@ int check() {
 }
 
 int main( int argc, char** argv ) {
-
   printf("Starting appTest2\n");
   size_t time_config, time_exec, time_check;
 

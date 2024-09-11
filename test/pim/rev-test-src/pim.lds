@@ -5,8 +5,13 @@ SECTIONS
   . = 0x08000000;
   .data : { *(.data) }
   .bss : { *(.bss) }
-  . = 0xF000000;
+
+  . = 0x0E000000;
+  .func_base : { *(.func_base) }
+  . = 0x0E000100;
+  .usrfunc_base : { *(.usrfunc_base) }
+  . = 0x0F000000;
   .pimsram : { *(.pimsram) }
-    . = 0xF800000;
+  . = 0x0F800000;
   .pimdram : { *(.pimdram) }
 }

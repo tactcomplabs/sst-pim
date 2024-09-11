@@ -46,7 +46,7 @@ DOT2PDF = dot -Tpdf $(dotfile) -o $(pdffile)
 endif
 
 # Include application driver recipes
-ifndef REV
+ifdef APPX
  include mkinc/appx.mk
 else
  include mkinc/rev.mk

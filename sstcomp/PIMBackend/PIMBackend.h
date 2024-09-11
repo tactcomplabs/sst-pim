@@ -1,17 +1,9 @@
-// Copyright 2009-2023 NTESS. Under the terms
-// of Contract DE-NA0003525 with NTESS, the U.S.
-// Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2023, NTESS
-// All rights reserved.
+// Copyright (C) 2017-2024 Tactical Computing Laboratories, LLC
+// All Rights Reserved
+// contact@tactcomplabs.com
+// See LICENSE in the top level directory for licensing details
 //
-// Portions are copyright of other developers:
-// See the file CONTRIBUTORS.TXT in the top level directory
-// of the distribution for more information.
-//
-// This file is part of the SST software package. For license
-// information, see the LICENSE file in the top level directory of the
-// distribution.
 
 #ifndef _H_SST_PIM_BACKEND_
 #define _H_SST_PIM_BACKEND_

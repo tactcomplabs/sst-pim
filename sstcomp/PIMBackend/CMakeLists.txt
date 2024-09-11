@@ -18,6 +18,8 @@ set(PIMBackendSrcs
   memoryControllerKG.h
   pim.cc
   pim.h
+  tclpim.cc
+  tclpim.h
   memHierarchy/cacheListener.h
   memHierarchy/memEvent.h
   memHierarchy/memEventBase.h

@@ -89,8 +89,8 @@ PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( i
   if( pim_type == PIM_TYPE_TEST ) {
     pimsim = new TestPIM( node_id, &pimOutput );
     pimOutput.verbose( CALL_INFO, 1, 0, "pim_type=%" PRIu32 " Node=%" PRIu32 " Using Test Mode\n", PIM_TYPE_TEST, node_id );
-  } else if( pim_type == PIM_TYPE_GENERIC ) {
-    pimOutput.fatal( CALL_INFO, -1, "PIM_TYPE_GENERC is under construction\n" );
+  } else if( pim_type == PIM_TYPE_TCL ) {
+    pimOutput.fatal( CALL_INFO, -1, "PIM_TYPE_TCL is under construction\n" );
   } else if( pim_type == PIM_TYPE_RESERVE ) {
     pimOutput.fatal( CALL_INFO, -1, "PIM_TYPE_RESERVED not supported\n" );
   } else {

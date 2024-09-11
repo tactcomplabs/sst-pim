@@ -114,7 +114,7 @@ private:
 
   SimpleDMA* dma;
 
-};  //class SimTest
+};  //class TestPIM
 
 }  // namespace SST::PIM
 

@@ -9,7 +9,7 @@
 #
 
 # PIM Type (0:none, 1:test, 2:reserved, 3:generic)
-export PIM_TYPE=1
+export PIM_TYPE=3
 
 # REV paths
 REVLIBPATH ?= $(PIM_REV_HOME)/build/src

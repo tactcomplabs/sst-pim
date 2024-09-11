@@ -1,9 +1,9 @@
 #!/bin/bash
 
 if [ $1 == 1 ]; then
-    export REV=1
+    export APPX=1
 else
-    unset REV
+    unset APPX
 fi
 
 make clean
