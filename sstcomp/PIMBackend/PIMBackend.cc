@@ -17,7 +17,7 @@
 #include <sst/core/sst_config.h>
 #include <sst/core/link.h>
 #include "PIMBackend.h"
-#include "TCLPIM.h"
+#include "tclpim.h"
 #include "sst/elements/memHierarchy/util.h"
 #include "kgdbg.h"
 // clang-format on
@@ -35,7 +35,7 @@ namespace SST::PIM {
 /*------------------------------- Simple Backend ------------------------------- */
 PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( id, params ) {
 
-  kgdbg::spinner( "PIM_SPINNER" );
+  kgdbg::spinner( "PIMBACKEND_SPINNER" );
 
   // Get parameters
   fixupParams( params, "clock", "backend.clock" );
@@ -148,6 +148,7 @@ bool PIMBackend::clock( Cycle_t cycle ) {
 
   if( pimsim && !initDRAMDone ) {
     initDRAMDone                 = true;
+    this->output->verbose(CALL_INFO, 3, 0, "Running initial scratch pad test\n");
     // Write test data to scratch pad base + 64
     MemEventBase::dataVec wrData = { 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe };
     MemEvent*             evw    = new MemEvent( getName(), spdBase + 64, spdBase + 64, PIM_WRITE, wrData );
@@ -189,9 +190,8 @@ void PIMBackend::issueDRAMRequest(
     *vec
   );
 
-  // Node0 0x0
-  // Node1 0x08000_0000
-  // Node2 0x10000_0000
+  // TODO node decode
+  assert(a==0);
   ev->setDst( "memory" + std::to_string( ( a >> 27 ) % num_nodes ) );
   ev->setFlags( MemEvent::F_NONCACHEABLE );
   m_pimRequest( ev );
@@ -240,7 +240,7 @@ void PIMBackend::handleMMIOReadCompletion( SST::Event* ev ) {
   buffer.resize( mev->getSize() );
   pimsim->read( mev->getAddr(), mev->getSize(), buffer );
   mev->setPayload( buffer );
-  //pimOutput.verbose(CALL_INFO,3,0,"MMIO read a=0x%" PRIx64 "d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
+  pimOutput.verbose(CALL_INFO,3,0,"MMIO read a=0x%" PRIx64 "d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
 }
 
 void PIMBackend::handleMMIOWriteCompletion( SST::Event* ev ) {
@@ -248,7 +248,7 @@ void PIMBackend::handleMMIOWriteCompletion( SST::Event* ev ) {
   // write event payload to PIM
   buffer        = mev->getPayload();
   pimsim->write( mev->getAddr(), mev->getSize(), &buffer );
-  //pimOutput.verbose(CALL_INFO,3,0,"MMIO write a=0x%" PRIx64 "d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
+  pimOutput.verbose(CALL_INFO,3,0,"MMIO write a=0x%" PRIx64 "d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
 }
 
 void PIMBackend::setup() {

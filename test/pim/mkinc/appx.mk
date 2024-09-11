@@ -52,8 +52,11 @@ $(OUTDIR)/AppxTest/run.log:             OPTS = APP=AppxTest PIM_TYPE=1
 	$(OPTS) OUTPUT_DIRECTORY=$(@D) \
  $(MPIOPTS) $(SST) $(SSTOPTS) \
  --output-json=$(@D)/rank.json $(SSTCFG) \
- > $@ && (echo "pass" > $(statf); $(DOT2PDF)) || echo "fail" > $(statf)
-	@echo "### " $@":" `cat $(statf)`
+ > $@ && (echo "pass" > $(statf); $(DOT2PDF))
+
+ # To run all even if they fail use this instead
+ # > $@ && (echo "pass" > $(statf); $(DOT2PDF)) || echo "fail" > $(statf)
+ #	@echo "### " $@":" `cat $(statf)`
 
 clean:
 	rm -rf $(OUTDIR)

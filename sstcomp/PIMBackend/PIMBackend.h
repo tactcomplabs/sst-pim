@@ -42,7 +42,7 @@ public:
     { "verbose", "Sets the verbosity of the backend output", "0" },
     { "backend", "Backend memory system", "memHierarchy.simpleMem" },
     { "request_delay", "Constant delay to be added to requests with units (e.g., 1us)", "0ns" },
-    { "pim_type", "1:test mode, 2:reserved, 3:generic", "1" },
+    { "pim_type", "1:test mode, 2:reserved, 3:tclpim", "1" },
     { "num_nodes", "Number of nodes", "1" },
   )
 

@@ -102,11 +102,15 @@ int main( int argc, char** argv ) {
   printf("Starting appTest2\n");
   size_t time_config, time_exec, time_check;
 
+  printf("Configuring...\n");
   time_config = configure();
+  printf("Executing...\n");
   time_exec = theApp(); 
+  printf("Checking...\n");
   time_check = check();
 
-  printf("cycles: config=%d, exec=%d, check=%d", time_config, time_exec, time_check);
+  printf("Results:\n");
+  printf("cycles: config=%d, exec=%d, check=%d\n", time_config, time_exec, time_check);
   printf("appTest2 completed normally\n");
   return 0;
 }

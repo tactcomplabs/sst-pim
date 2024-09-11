@@ -14,6 +14,7 @@
 #include "PIMBackend.h"
 #include "PIMDecoder.h"
 #include "pimdef.h"
+#include "kgdbg.h"
 
 using namespace SST::MemHierarchy;
 
@@ -36,7 +37,9 @@ struct PIMReq_t {
 
 class PIM {
 public:
-  PIM( SST::Output* o ) : output( o ) {};
+  PIM( SST::Output* o ) : output( o ) {
+    kgdbg::spinner("PIM_SPINNER");
+  };
 
   virtual ~PIM() {}
 

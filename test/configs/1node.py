@@ -42,7 +42,7 @@ debug_level = {
 }
 
 verbose = {
-    "rev"           :  0,  # 5:tracer
+    "rev"           :  1,  # 1:rev_fast_printf 5:tracer
     "rev_mem_ctrl"  :  0,  # 1-4:nada?, 5-10:info
     "l1"            :  0,  # 0[fatal error only], 1[warnings], 2[full state dump on fatal error]
     "l2"            :  0,  # 0[fatal error only], 1[warnings], 2[full state dump on fatal error]
@@ -123,7 +123,7 @@ SUPPORTED_MEMORY_MODELS = ["simpleMem","dramsim3"]
 MEMORY_MODEL = os.getenv("MEMORY_MODEL","simpleMem")
 MEMORY_CONTROLLER = "PIM.PIMMemController"
 
-PIM_TYPE = os.getenv("PIM_TYPE","0")  # 0:none, 1:test, 2:reserved, 3:generic
+PIM_TYPE = os.getenv("PIM_TYPE","0")  # 0:none, 1:test, 2:reserved, 3:tclpim
 print(f"PIM_TYPE={PIM_TYPE}")
 
 if MEMORY_MODEL not in SUPPORTED_MEMORY_MODELS:
@@ -161,15 +161,13 @@ rev_params = {
     "numCores" : NUM_CORES,                          # Number of cores
     "clock" : timing_params['global_clock'],
                                                      # Adjust top of memory per stack
-    #"memSize" : mem_info['sz_rev'],                 # Memory size in bytes
     "maxHeapSize" : (1024*1024*1024)>>4,             # Default is 1/4 mem size
     "machine" : "[CORES:RV64GC]",                    # Core:Config
-    # "startAddr" : "[0:0x00000000]",                # Starting address for core 0
     "memCost" : "[0:1:10]",                          # Memory loads required 1-10 cycles
     "program" : os.getenv("REV_EXE", "sanity.exe"),  # Target executable
     "enable_memH" : 1,                               # Enable memHierarchy support
-    #"trcStartCycle" : 1,
-    #"trcLimit" : 100,
+    "trcStartCycle" : 1,                             # Begin cycle for tracing
+    #"trcLimit" : 100,                               # End cycle for tracing
     "splash" : 0,                                    # Display the splash message
 }
 
@@ -240,7 +238,7 @@ memlink_params = {
 }
 
 memctrl_params = {
-    "pim_type" : PIM_TYPE,           # 1:test mode, 2:reserved, 3:generic
+    "pim_type" : PIM_TYPE,           # 1:test mode, 2:reserved, 3:tclpim
     "clock" : timing_params['global_clock'],
     "request_width" : 64,
     "verbose" : verbose['mem'],

@@ -37,7 +37,7 @@ private:
   std::deque<uint64_t>                       ctl_ops;
   bool                                       ctl_exec   = false;
   bool                                       ctl_locked = false;
-  void                                       ctl_write( unsigned offset );
+  void                                       function_write( unsigned offset );
 
   // dma sequencer
   class SimpleDMA {

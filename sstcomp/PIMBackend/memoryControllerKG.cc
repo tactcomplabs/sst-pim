@@ -501,6 +501,14 @@ MemControllerKG::MemControllerKG( ComponentId_t id, Params& params ) : Component
 }
 
 void MemControllerKG::handlePIMEvent( SST::Event* event ) {
+  out.verbose(
+      CALL_INFO,
+      3,
+      0,
+      "%s, Pim Event: %s\n",
+      getName().c_str(),
+      event->toString().c_str()
+    );
   static_cast<MemEvent*>( event )->setFlag( PIMMemEvent::F_PIM );
   handleEvent( event );
 }
@@ -539,6 +547,7 @@ void MemControllerKG::handleEvent( SST::Event* event ) {
 
   if( ev->queryFlag( PIMMemEvent::F_PIM ) ) {
     if( !region_.contains( ev->getBaseAddr() ) ) {
+      #if 0
       out.verbose(
         CALL_INFO,
         2,
@@ -548,6 +557,16 @@ void MemControllerKG::handleEvent( SST::Event* event ) {
         getName().c_str(),
         ev->getVerboseString( dlevel ).c_str()
       );
+      #else
+      out.fatal(
+        CALL_INFO,
+        -1,
+        "%s, (unsupported) event base address does not map "
+        "to this controller. Event: %s\n",
+        getName().c_str(),
+        ev->getVerboseString( dlevel ).c_str()
+      );      
+      #endif
       handleForwardedEvent( ev );
       return;
     }
@@ -806,7 +825,7 @@ void MemControllerKG::handleMemResponse( Event::id_type id, uint32_t flags ) {
   /* Handle custom events */
   if( evb->getCmd() == Command::CustomReq ) {
     assert( false );
-    MemEventBase* resp = customCommandHandler_->finish_c( evb, flags );
+    MemEventBase* resp = customCommandHandler_->finish( evb, flags );
     if( resp != nullptr )
       link_->send( resp );
     delete evb;
@@ -932,7 +951,7 @@ void MemControllerKG::setup( void ) {
 void MemControllerKG::finish( void ) {
   Cycle_t cycle = getNextClockCycle( clockTimeBase_ );  // Get finish time
   cycle--;
-  memBackendConvertor_->finish_c( cycle );
+  memBackendConvertor_->finish( cycle );
   link_->finish();
   if( flink_ )
     flink_->finish();

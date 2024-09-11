@@ -46,7 +46,6 @@ bool TCLPIM::isMMIO( uint64_t addr ) {
 }
 
 void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload ) {
-  // TODO eleminate extra decode
   PIMDecodeInfo info = pimDecoder->decode( addr );
   if( info.pimAccType == PIM_ACCESS_TYPE::SRAM ) {
     unsigned spdIndex = ( addr & 0x38ULL ) >> 3;
@@ -65,7 +64,11 @@ void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload )
 }
 
 void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload ) {
-  // TODO eliminate extra decode
+  // TODO: Fix elf / linker to not load these
+  if (numBytes !=8 ) {
+    output->verbose(CALL_INFO, 3, 0, "Warning: Dropping MMIO write to function handler with numBytes=%d\n", numBytes );
+    return;
+  }
   PIMDecodeInfo info = pimDecoder->decode( addr );
   if( info.pimAccType == PIM_ACCESS_TYPE::SRAM ) {
     // 8 8-byte entries. Byte Addressable (memcpy -O0 does byte copy).
@@ -80,8 +83,7 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
       CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[offset]
     );
   } else if( info.pimAccType == PIM_ACCESS_TYPE::F0 ) {
-    // 4 entries, write-only, DWORD addressable
-    // These have hardware effects.
+    // Functions
     unsigned offset = ( addr & 0x38ULL ) >> 3;
     unsigned byte   = ( addr & 0x7 );
     assert( numBytes == 8 );
@@ -91,13 +93,13 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
       p[byte + i] = payload->at( i );
     }
     output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE F0 A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, ctl_buf );
-    ctl_write( offset );
+    function_write( offset );
   } else {
     assert( false );
   }
 }
 
-void TCLPIM::ctl_write( unsigned offset ) {
+void TCLPIM::function_write( unsigned offset ) {
   assert( offset < 4 );
   PIM_FUNCTION_CONTROL ctloff = static_cast<PIM_FUNCTION_CONTROL>( offset );
   //cout << "F0[" << PIM_OFFSET2string.at(ctloff) << "] <- 0x" << hex << ctl_buf << endl;

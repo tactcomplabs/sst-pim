@@ -8,7 +8,7 @@
 # See LICENSE in the top level directory for licensing details
 #
 
-# PIM Type (0:none, 1:test, 2:reserved, 3:generic)
+# PIM Type (0:none, 1:test, 2:reserved, 3:tclpim)
 export PIM_TYPE=3
 
 # REV paths
@@ -101,8 +101,11 @@ ARCH      := rv64gc
 	$(OPTS) OUTPUT_DIRECTORY=$(@D) ARCH=$(ARCH) REV_EXE=$(exe) \
  $(MPIOPTS) $(SST) $(SSTOPTS) \
  --output-json=$(@D)/rank.json $(SSTCFG) \
- > $@ && (echo "pass" > $(statf); $(DOT2PDF)) || echo "fail" > $(statf)
-	@echo "### " $@":" `cat $(statf)`
+  > $@ && (echo "pass" > $(statf); $(DOT2PDF))
+
+# To run all even if they fail use this instead
+#  > $@ && (echo "pass" > $(statf); $(DOT2PDF)) || echo "fail" > $(statf)
+# 	@echo "### " $@":" `cat $(statf)`
 
 %.dis: %.exe
 	$(OBJDUMP) $< > $@

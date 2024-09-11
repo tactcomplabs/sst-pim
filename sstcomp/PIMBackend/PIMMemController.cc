@@ -49,7 +49,7 @@ void PIMMemController::handleEvent( SST::Event* event ) {
   if( !ev->queryFlag( PIMMemEvent::F_PIM ) ) {
     if( mmio_decoder->decode( ev->getAddr() ).isIO ) {
       ev->setFlag( PIMMemEvent::F_MMIO );
-      //cout << "Received MMIO event " << ev->toString() << endl;
+      this->out.verbose(CALL_INFO, 3, 0, "Received MMIO event %s\n", ev->toString().c_str());
     }
   }
   MemControllerKG::handleEvent( event );
