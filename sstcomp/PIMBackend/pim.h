@@ -62,7 +62,7 @@ public:
     m_issueDRAMRequest = handler;
   }
 
-protected:
+  //TODO protect and friend FSM
   SST::Output*          output;
   MemEventBase::dataVec buffer;
 
