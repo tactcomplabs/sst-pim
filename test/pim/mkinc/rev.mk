@@ -13,6 +13,7 @@ export PIM_TYPE=3
 
 # REV paths
 REVLIBPATH ?= $(PIM_REV_HOME)/build/src
+REVPRINT ?= $(PROJHOME)/scripts/rev-print.sh
 
 # Test source code
 SRCDIR = ./rev-test-src
@@ -44,8 +45,9 @@ DIASMS := $(patsubst %.exe,%.dis,$(EXES))
 SECTIONS := $(patsubst %.exe,%.sections,$(EXES))
 
 # Targets
-LOGS   := $(addsuffix /run.log,$(addprefix $(OUTDIR)/,$(TLIST)))
-TARGS  := $(LOGS) $(EXES) $(DIASMS) $(SECTIONS)
+LOGS    := $(addsuffix /run.log,$(addprefix $(OUTDIR)/,$(TLIST)))
+REVLOGS := $(addsuffix /run.revlog,$(addprefix $(OUTDIR)/,$(TLIST)))
+TARGS   := $(LOGS) $(EXES) $(DIASMS) $(SECTIONS) $(REVLOGS)
 
 # Recipes
 all: $(TARGS)
@@ -106,6 +108,9 @@ ARCH      := rv64gc
 # To run all even if they fail use this instead
 #  > $@ && (echo "pass" > $(statf); $(DOT2PDF)) || echo "fail" > $(statf)
 # 	@echo "### " $@":" `cat $(statf)`
+
+%.revlog: %.log
+	@ $(REVPRINT) $< > $@
 
 %.dis: %.exe
 	$(OBJDUMP) $< > $@
