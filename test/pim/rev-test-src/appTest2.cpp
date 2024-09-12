@@ -26,8 +26,8 @@ const int xfr_size = 256;  // dma transfer size in dwords
 uint64_t check_data[xfr_size];
 #if 1
 uint64_t sram[64] __attribute__((section(".pimsram")));
-uint64_t dram_src[xfr_size] __attribute__((section(".pimdram")));
 uint64_t dram_dst[xfr_size] __attribute__((section(".pimdram")));
+uint64_t dram_src[xfr_size] __attribute__((section(".pimdram")));
 #else
 uint64_t sram[64];
 uint64_t dram_src[xfr_size];
@@ -72,9 +72,8 @@ size_t theApp() {
 size_t theApp() {
   size_t time1, time2;
   REV_TIME( time1 );
-  revpim::init(PIM::FUNC::F1, (void*)dram_dst, (void*)dram_src, xfr_size*sizeof(uint64_t));
+  revpim::init(PIM::FUNC::F1, (void*)dram_dst, (void*)dram_src, xfr_size);
   revpim::run(PIM::FUNC::F1);
-  memcpy(dram_dst, dram_src, xfr_size*sizeof(uint64_t));
   revpim::finish(PIM::FUNC::F1); // blocking
   REV_TIME( time2 );
   return time2 - time1;
@@ -105,6 +104,10 @@ size_t check() {
 int main( int argc, char** argv ) {
   printf("Starting appTest2\n");
   size_t time_config, time_exec, time_check;
+
+  printf("\ndram_dst=0x%lx\ndram_src=0x%lx\nxfr_size=%d\n",
+    reinterpret_cast<uint64_t>(dram_dst), reinterpret_cast<uint64_t>(dram_src), xfr_size
+  );
 
   printf("Configuring...\n");
   time_config = configure();

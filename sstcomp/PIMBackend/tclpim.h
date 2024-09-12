@@ -37,12 +37,35 @@ private:
   void                 function_write( uint64_t data );
   uint64_t             decodeFuncNum( uint64_t address, unsigned numBytes );
 
-  // Primary functional state machine
+  // dma sequencer
+  class MemCopy {
+  public:
+    MemCopy( TCLPIM* p );
+    virtual ~MemCopy() {};
+    void     start( uint64_t dst, uint64_t src, uint64_t numWords );
+    unsigned clock();  // return 1 when busy, 0 when idle
+    inline bool active() { return ( dma_state != DMA_STATE::IDLE ); };
+  private:
+    TCLPIM* parent;
+    enum DMA_STATE { IDLE, READ, WRITE, WAITING, DONE };
+    DMA_STATE dma_state    = DMA_STATE::IDLE;
+    uint64_t  total_words  = 0;
+    uint64_t  word_counter = 0;
+    uint64_t  src          = 0;
+    uint64_t  dst          = 0;
+  };  //class MemCopy
+
+  
+
+    // Primary functional state machine
   class FuncState {
   public:
-    FuncState( TCLPIM* p, unsigned n) : parent(p), fnum(n)  {};
+    FuncState( TCLPIM* p, unsigned n);
+    void writeFSM(FUNC_CMD cmd);
     void writeFSM(uint64_t d);
     uint64_t readFSM();
+    bool running();
+    std::unique_ptr<MemCopy> exec;
   private:
     TCLPIM* parent;
     unsigned fnum;
@@ -54,26 +77,6 @@ private:
   }; // class FuncState
 
   std::vector<std::unique_ptr<FuncState>> funcState;
-
-  // dma sequencer
-  class SimpleDMA {
-  public:
-    SimpleDMA( TCLPIM* p );
-    virtual ~SimpleDMA() {};
-    void     start( uint64_t src, uint64_t dst, uint64_t numWords );
-    unsigned clock();  // return 1 when busy, 0 when idle
-    inline bool active() { return ( dma_state != DMA_STATE::IDLE ); };
-  private:
-    TCLPIM* parent;
-    enum DMA_STATE { IDLE, READ, WRITE, WAITING, DONE };
-    DMA_STATE dma_state    = DMA_STATE::IDLE;
-    uint64_t  total_words  = 0;
-    uint64_t  word_counter = 0;
-    uint64_t  src          = 0;
-    uint64_t  dst          = 0;
-  };  //class SimpleDMA
-
-  SimpleDMA* dma;
 
 };  //class TCLPIM
 

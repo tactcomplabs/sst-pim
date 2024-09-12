@@ -14,33 +14,35 @@ TCLPIM::TCLPIM( uint64_t node, SST::Output* o ) : PIM( o ) {
   id          = ( uint64_t( PIM_TYPE_TEST ) << 56 ) | ( node << 12 );
   spdArray[0] = id;
   output->verbose( CALL_INFO, 1, 0, "Creating TCLPIM node=%" PRId64 " id=0x%" PRIx64 "\n", node, id );
-  // proto DMA
-  dma       = new SimpleDMA( this );
   // mmio decoder
   pimDecoder = new PIMDecoder( node );
-
   // Built-in functions
-  funcState.resize(NUM_FUNC_PARAMS);
-  for (unsigned i=0; i<NUM_FUNC_PARAMS; i++ ) {
+  funcState.resize(NUM_FUNCS);
+  for (unsigned i=0; i<NUM_FUNCS; i++ )
     funcState[i] = std::make_unique<FuncState>(this, i);
-  }
-
 }
 
 TCLPIM::~TCLPIM() {
-  if( dma )
-    delete dma;
   if( pimDecoder )
     delete pimDecoder;
 }
 
 bool TCLPIM::clock( SST::Cycle_t cycle ) {
   this->cycle = cycle;
-  if( dma->active() ) {
-    uint64_t done = dma->clock();
-    spdArray[0]   = done;
+
+  // if( dma->active() ) {
+  //   uint64_t done = dma->clock();
+  //   spdArray[0]   = done;
+  // }
+  
+  for ( int fnum=0; fnum<16; fnum++) {
+    if (funcState[fnum]->running()) {
+      uint64_t done = funcState[fnum]->exec->clock();
+      if (done)
+        funcState[fnum]->writeFSM(FUNC_CMD::FINISH);
+    }
   }
-  return false;  // do not disable clock
+
 }
 
 uint64_t TCLPIM::getCycle() {
@@ -95,7 +97,7 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
 
   // TODO: Fix elf / linker to not load these
   if (numBytes !=8 ) {
-    output->verbose(CALL_INFO, 3, 0, "Warning: Dropping MMIO write to function handler with numBytes=%d\n", numBytes );
+    output->verbose(CALL_INFO, 3, 0, "Warning: Dropping MMIO write to function handler with numBytes=%" PRIx64 "\n", numBytes );
     return;
   }
   PIMDecodeInfo info = pimDecoder->decode( addr );
@@ -116,7 +118,7 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
     unsigned fnum = decodeFuncNum(addr, numBytes);
     uint64_t data = 0;
     uint8_t* p = (uint8_t*) ( &data );
-    for( int i = 0; i < numBytes; i++ )
+    for( unsigned i = 0; i < numBytes; i++ )
       p[i] = payload->at( i );
 
     output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE FUNC[%d] D=0x%" PRIx64 "\n", id, fnum, data );
@@ -124,6 +126,11 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
   } else {
     assert( false );
   }
+}
+
+TCLPIM::FuncState::FuncState(TCLPIM *p, unsigned n) : parent(p), fnum(n)
+{
+  exec = make_unique<MemCopy>(p);
 }
 
 void TCLPIM::FuncState::writeFSM(uint64_t d)
@@ -145,13 +152,13 @@ void TCLPIM::FuncState::writeFSM(uint64_t d)
       break;
     case FSTATE::READY:
       if (static_cast<FUNC_CMD>(d) == FUNC_CMD::RUN) {
-        //fstate = FSTATE::RUNNING;
-        fstate = FSTATE::DONE;
+        fstate = FSTATE::RUNNING;
         counter = 0;
         parent->output->verbose(
           CALL_INFO, 3, 0, 
           "Starting Function[%d]( 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " )\n",
           fnum, params[0], params[1], params[2]);
+        exec->start(params[0], params[1], params[2]);
       } else {
         assert(false);
       }
@@ -159,32 +166,42 @@ void TCLPIM::FuncState::writeFSM(uint64_t d)
     case FSTATE::RUNNING:
         fstate = FSTATE::DONE;
         counter = 0;
-        parent->output->verbose( CALL_INFO, 3, 0, "Function[%d] Done", fnum );
+        parent->output->verbose( CALL_INFO, 3, 0, "Function[%d] Done\n", fnum );
       break;
   }
 }
+
+void TCLPIM::FuncState::writeFSM(FUNC_CMD cmd) {
+  writeFSM( static_cast<uint64_t>(cmd) );
+}
+
 
 uint64_t TCLPIM::FuncState::readFSM()
 {
     return static_cast<uint64_t>(fstate);
 }
 
-TCLPIM::SimpleDMA::SimpleDMA( TCLPIM* p ) : parent( p ) {};
+bool TCLPIM::FuncState::running()
+{
+    return fstate==FSTATE::RUNNING;
+}
 
-void TCLPIM::SimpleDMA::start( uint64_t src, uint64_t dst, uint64_t numWords ) {
+TCLPIM::MemCopy::MemCopy( TCLPIM* p ) : parent( p ) {};
+
+void TCLPIM::MemCopy::start( uint64_t dst, uint64_t src, uint64_t numWords ) {
   if( numWords == 0 )
     return;
-  this->src    = src;
   this->dst    = dst;
+  this->src    = src;
   total_words  = numWords;
   word_counter = numWords;
   dma_state    = DMA_STATE::READ;
   parent->output->verbose(
-    CALL_INFO, 3, 0, "start dma: src=0x%" PRIx64 " dst=0x%" PRIx64 " total_words=%" PRId64 "\n", src, dst, total_words
+    CALL_INFO, 3, 0, "start dma: dst=0x%" PRIx64 " src=0x%" PRIx64 " total_words=%" PRId64 "\n", dst, src, total_words
   );
 }
 
-unsigned TCLPIM::SimpleDMA::clock() {
+unsigned TCLPIM::MemCopy::clock() {
 #if 1
   unsigned words = word_counter >= 64 ? 64 : word_counter;
 #else

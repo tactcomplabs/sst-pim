@@ -165,26 +165,32 @@ unsigned TestPIM::SimpleDMA::clock() {
   const bool WRITE = true;
   const bool READ  = false;
   if( dma_state == DMA_STATE::READ ) {
-    parent->m_issueDRAMRequest( src, &parent->buffer, READ, [this]( const MemEventBase::dataVec& d ) {
-      assert( parent->buffer.size() == d.size() );
-      for( int i = 0; i < d.size(); i++ ) {
-        parent->buffer[i] = d[i];
-      }
-      dma_state = DMA_STATE::WRITE;
-    } );
+    parent->m_issueDRAMRequest( src, &parent->buffer, READ, [this]( const MemEventBase::dataVec& d ) 
+      {
+        assert( parent->buffer.size() == d.size() );
+        for( int i = 0; i < d.size(); i++ ) {
+          parent->buffer[i] = d[i];
+        }
+        dma_state = DMA_STATE::WRITE;
+      } 
+    );
     dma_state = DMA_STATE::WAITING;
     src += bytes;
   } else if( dma_state == DMA_STATE::WRITE ) {
     assert( word_counter >= words );
     word_counter = word_counter - words;
     if( word_counter > 0 ) {
-      parent->m_issueDRAMRequest( dst, &parent->buffer, WRITE, [this]( const MemEventBase::dataVec& d ) {
-        dma_state = DMA_STATE::READ;
-      } );
+      parent->m_issueDRAMRequest( dst, &parent->buffer, WRITE, [this]( const MemEventBase::dataVec& d ) 
+        {
+          dma_state = DMA_STATE::READ;
+        }
+      );
     } else {
-      parent->m_issueDRAMRequest( dst, &parent->buffer, WRITE, [this]( const MemEventBase::dataVec& d ) {
-        dma_state = DMA_STATE::DONE;
-      } );
+      parent->m_issueDRAMRequest( dst, &parent->buffer, WRITE, [this]( const MemEventBase::dataVec& d ) 
+        {
+          dma_state = DMA_STATE::DONE;
+        }
+      );
     }
     dst += bytes;
     dma_state = DMA_STATE::WAITING;
@@ -196,6 +202,14 @@ unsigned TestPIM::SimpleDMA::clock() {
   return 0;
 }
 
+uint64_t getPayload(std::vector<uint8_t> payload)
+{
+    uint64_t data = 0;
+    uint8_t* p = (uint8_t*) ( &data );
+    for( unsigned i = 0; i < sizeof(uint64_t); i++ )
+      p[i] = payload[i];
+    return data;
+}
 
 } // namespace SST::PIM
 

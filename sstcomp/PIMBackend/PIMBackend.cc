@@ -190,8 +190,8 @@ void PIMBackend::issueDRAMRequest(
     *vec
   );
 
-  // TODO node decode
-  assert(a==0);
+  // TODO remote node decode
+  assert(num_nodes==1);
   ev->setDst( "memory" + std::to_string( ( a >> 27 ) % num_nodes ) );
   ev->setFlags( MemEvent::F_NONCACHEABLE );
   m_pimRequest( ev );
@@ -201,7 +201,6 @@ void PIMBackend::issueDRAMRequest(
 
 void PIMBackend::handlePIMCompletion( SST::Event* resp ) {
   MemEvent* mev = static_cast<MemEvent*>( resp );
-  pimOutput.verbose( CALL_INFO, 3, 0, "%s\n", mev->toString().c_str() );
 
   // TODO use self-check completion function
   if( !selfCheckDone ) {
@@ -227,7 +226,11 @@ void PIMBackend::handlePIMCompletion( SST::Event* resp ) {
     pimOutput.fatal( CALL_INFO, -1, "Could not match ID for PIM returning PIM event [ %s ]\n", mev->toString().c_str() );
   }
   // Invoke its completion function
+  auto payload = mev->getPayload();
   it->second( mev->getPayload() );
+
+  pimOutput.verbose( CALL_INFO, 3, 0, "%s\n", mev->toString().c_str() );
+  
   // Erase the entry
   pendingPIMEvents.erase( it );
   delete resp;  // Event completed.

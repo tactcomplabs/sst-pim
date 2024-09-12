@@ -40,6 +40,8 @@ namespace SST::PIM
         U0, U1, U2, U3, U4, U5, U6, U7
     };
 
+    const unsigned NUM_FUNCS = 16;
+
     // Number of funtion params to send on init
     const unsigned NUM_FUNC_PARAMS = 3;
 
