@@ -62,7 +62,8 @@ private:
 class FSM {
 public:
   FSM( TCLPIM* p ) : parent(p) {};
-  virtual void start( uint64_t dst, uint64_t src, uint64_t numWords ) = 0;
+  virtual ~FSM() {};
+  virtual void start( uint64_t params[NUM_FUNC_PARAMS] ) = 0;
   virtual bool clock() = 0;  // return true when done
 
 protected:

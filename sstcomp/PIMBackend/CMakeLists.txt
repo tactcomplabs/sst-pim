@@ -20,8 +20,10 @@ set(PIMBackendSrcs
   pim.h
   tclpim.cc
   tclpim.h
-  tclpim_functions.h
   tclpim_functions.cc
+  tclpim_functions.h
+  userpim_functions.cc
+  userpim_functions.h
   memHierarchy/cacheListener.h
   memHierarchy/memEvent.h
   memHierarchy/memEventBase.h

@@ -5,17 +5,16 @@
 // See LICENSE in the top level directory for licensing details
 //
 
-#ifndef _SST_PIMBACKEND_TCL_PIM_FUNCTIONS_
-#define _SST_PIMBACKEND_TCL_PIM_FUNCTIONS_
+#ifndef _SST_PIMBACKEND_USER_PIM_FUNCTIONS_
+#define _SST_PIMBACKEND_USER_PIM_FUNCTIONS_
 
 #include "tclpim.h"
 
 namespace SST::PIM {
 
-class MemCopy : public FSM {
+class MulVecByScalar : public FSM {
 public:
-  MemCopy( TCLPIM* p );
-  virtual ~MemCopy() {};
+  MulVecByScalar( TCLPIM* p );
   void start( uint64_t params[NUM_FUNC_PARAMS] ) override;
   bool clock() override;
 private:
@@ -25,10 +24,10 @@ private:
   uint64_t  word_counter = 0;
   uint64_t  src          = 0;
   uint64_t  dst          = 0;
-};  //class MemCopy
-
+  uint64_t  scalar       = 0;
+};  //class MulVecByScalar
 
 } // namespace SST::PIM
 
 
-#endif //_SST_PIMBACKEND_TCL_PIM_FUNCTIONS_
+#endif //_SST_PIMBACKEND_USER_PIM_FUNCTIONS_

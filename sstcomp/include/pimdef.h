@@ -43,7 +43,7 @@ namespace SST::PIM
     const unsigned NUM_FUNCS = 16;
 
     // Number of funtion params to send on init
-    const unsigned NUM_FUNC_PARAMS = 3;
+    const unsigned NUM_FUNC_PARAMS = 8;
 
     // Function states
     enum class FSTATE  : int { INVALID, INITIALIZING, READY, RUNNING, DONE };

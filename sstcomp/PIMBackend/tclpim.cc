@@ -29,21 +29,17 @@ TCLPIM::~TCLPIM() {
 }
 
 bool TCLPIM::clock( SST::Cycle_t cycle ) {
-  this->cycle = cycle;
-
-  // if( dma->active() ) {
-  //   uint64_t done = dma->clock();
-  //   spdArray[0]   = done;
-  // }
-  
+  this->cycle = cycle;  
   for ( int fnum=0; fnum<16; fnum++) {
     if (funcState[fnum]->running()) {
       uint64_t done = funcState[fnum]->exec->clock();
-      if (done)
+      if (done) {
         funcState[fnum]->writeFSM(FUNC_CMD::FINISH);
+        return true;
+      }
     }
   }
-
+  return false;
 }
 
 uint64_t TCLPIM::getCycle() {
@@ -157,9 +153,12 @@ void TCLPIM::FuncState::writeFSM(uint64_t d)
         counter = 0;
         parent->output->verbose(
           CALL_INFO, 3, 0, 
-          "Starting Function[%d]( 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " )\n",
-          fnum, params[0], params[1], params[2]);
-        exec->start(params[0], params[1], params[2]);
+          "Starting Function[%d]( 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 "0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " )\n",
+          fnum, 
+          params[0], params[1], params[2], params[3],
+          params[4], params[5], params[6], params[7]
+        );
+        exec->start(params);
       } else {
         assert(false);
       }

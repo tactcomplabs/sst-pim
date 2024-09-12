@@ -5,28 +5,30 @@
 // See LICENSE in the top level directory for licensing details
 //
 
-#include "tclpim_functions.h"
+#include "userpim_functions.h"
 
 namespace SST::PIM {
 
-MemCopy::MemCopy( TCLPIM* p ) : FSM( p ) {};
+MulVecByScalar::MulVecByScalar( TCLPIM* p ) : FSM( p ) {};
 
-void MemCopy::start( uint64_t params[NUM_FUNC_PARAMS] ) {
+void MulVecByScalar::start( uint64_t params[NUM_FUNC_PARAMS] ) {
   uint64_t numBytes = params[2];
   if( numBytes == 0 )
     return;
   assert((numBytes%8)==0);
-  this->dst    = params[0];
-  this->src    = params[1];
+  this->dst    = params[1];
+  this->src    = params[2];
+  this->scalar = 10;
   total_words  = numBytes/8;
   word_counter = numBytes/8;
   dma_state    = DMA_STATE::READ;
   parent->output->verbose(
-    CALL_INFO, 3, 0, "start dma: dst=0x%" PRIx64 " src=0x%" PRIx64 " total_words=%" PRId64 "\n", dst, src, total_words
-  );
+    CALL_INFO, 3, 0, 
+    "MulVecByScalar: dst=0x%" PRIx64 " src=0x%" PRIx64 "scalar=" PRId64 " total_words=%" PRId64 "\n", 
+    dst, src, scalar, total_words);
 }
 
-bool MemCopy::clock() {
+bool MulVecByScalar::clock() {
 #if 1
   unsigned words = word_counter >= 64 ? 64 : word_counter;
 #else

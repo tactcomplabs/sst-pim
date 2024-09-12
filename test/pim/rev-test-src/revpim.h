@@ -26,7 +26,10 @@ volatile uint64_t func[PIM::FUNC_SIZE] __attribute__((section(".func_base")));
 // Initialization functions
 //
 const unsigned NUM_REV_FUNC_PARAMS = PIM::NUM_FUNC_PARAMS;
-void init(PIM::FUNC f, uint64_t p0=0, uint64_t p1=0, uint64_t p2=0) {
+void init(PIM::FUNC f, 
+    uint64_t p0=0, uint64_t p1=0, uint64_t p2=0, uint64_t p3=0,
+    uint64_t p4=0, uint64_t p5=0, uint64_t p6=0, uint64_t p7=0 ) 
+{
     unsigned f_idx = static_cast<unsigned>(f);
     assert(f_idx<PIM::FUNC_SIZE);
     // initialization packet sent sequentially to same MMIO address
@@ -34,6 +37,11 @@ void init(PIM::FUNC f, uint64_t p0=0, uint64_t p1=0, uint64_t p2=0) {
     func[f_idx] = p0;
     func[f_idx] = p1;
     func[f_idx] = p2;
+    func[f_idx] = p3;
+    func[f_idx] = p4;
+    func[f_idx] = p5;
+    func[f_idx] = p6;
+    func[f_idx] = p7;
 }
 
 void init(PIM::FUNC f, void* ptr0, void* ptr1, size_t sz) {
