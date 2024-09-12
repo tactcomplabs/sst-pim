@@ -188,13 +188,14 @@ bool TCLPIM::FuncState::running()
 
 TCLPIM::MemCopy::MemCopy( TCLPIM* p ) : parent( p ) {};
 
-void TCLPIM::MemCopy::start( uint64_t dst, uint64_t src, uint64_t numWords ) {
-  if( numWords == 0 )
+void TCLPIM::MemCopy::start( uint64_t dst, uint64_t src, uint64_t numBytes ) {
+  if( numBytes == 0 )
     return;
+  assert((numBytes%8)==0);
   this->dst    = dst;
   this->src    = src;
-  total_words  = numWords;
-  word_counter = numWords;
+  total_words  = numBytes/8;
+  word_counter = numBytes/8;
   dma_state    = DMA_STATE::READ;
   parent->output->verbose(
     CALL_INFO, 3, 0, "start dma: dst=0x%" PRIx64 " src=0x%" PRIx64 " total_words=%" PRId64 "\n", dst, src, total_words
