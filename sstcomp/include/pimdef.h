@@ -35,14 +35,16 @@ namespace SST::PIM
     enum class FUNC_CMD : int { INIT, RUN, FINISH };
 
     // Enumerated functions
-    enum class FUNC    : int { F0, F1, F2, F3, F4, F5, F6, F7};
-    enum class USRFUNC : int { F0, F1, F2, F3, F4, F5, F6, F7};
+    enum class FUNC    : int { 
+        F0, F1, F2, F3, F4, F5, F6, F7, 
+        U0, U1, U2, U3, U4, U5, U6, U7
+    };
 
     // Number of funtion params to send on init
     const unsigned NUM_FUNC_PARAMS = 3;
 
     // Function states
-    enum class FSTATE  : int { INVALID, INITIALIZED, RUNNING, DONE };
+    enum class FSTATE  : int { INVALID, INITIALIZING, READY, RUNNING, DONE };
 
 } //namespace SST::PIM
 

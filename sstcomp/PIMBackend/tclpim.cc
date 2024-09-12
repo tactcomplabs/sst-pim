@@ -18,6 +18,13 @@ TCLPIM::TCLPIM( uint64_t node, SST::Output* o ) : PIM( o ) {
   dma       = new SimpleDMA( this );
   // mmio decoder
   pimDecoder = new PIMDecoder( node );
+
+  // Built-in functions
+  funcState.resize(NUM_FUNC_PARAMS);
+  for (unsigned i=0; i<NUM_FUNC_PARAMS; i++ ) {
+    funcState[i] = std::make_unique<FuncState>(this, i);
+  }
+
 }
 
 TCLPIM::~TCLPIM() {
@@ -45,6 +52,16 @@ bool TCLPIM::isMMIO( uint64_t addr ) {
   return inf.isIO;
 }
 
+uint64_t TCLPIM::decodeFuncNum(uint64_t a, unsigned numBytes)
+{
+    // 16 functions
+    unsigned n = ( a >> 3 ) & 0xf;
+    assert(n < SST::PIM::FUNC_SIZE );
+    assert( (a & 0x7UL) == 0 ); // byte aligned
+    assert( numBytes == 8 );
+    return n;
+}
+
 void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload ) {
   PIMDecodeInfo info = pimDecoder->decode( addr );
   if( info.pimAccType == PIM_ACCESS_TYPE::SRAM ) {
@@ -52,14 +69,23 @@ void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload )
     unsigned byte     = ( addr & 0x7 );
     assert( ( byte + numBytes ) <= 8 );  // 8 byte aligned only
     uint8_t* p = (uint8_t*) ( &( spdArray[spdIndex] ) );
-    for( int i = 0; i < numBytes; i++ ) {
+    for( unsigned i = 0; i < numBytes; i++ ) {
       payload[i] = p[byte + i];
     }
     output->verbose(
       CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[spdIndex]
     );
   } else {
-    assert( false );  // FUNC is write-only
+    unsigned fnum = decodeFuncNum(addr, numBytes);
+    output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ FUNC[%d]\n", id, fnum );
+    uint64_t d = funcState[fnum]->readFSM();
+    uint8_t* p = (uint8_t*) ( &d );
+    for( unsigned i = 0; i < numBytes; i++ ) {
+      payload[i] = p[i];
+    }
+    output->verbose(
+      CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ FUNC A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, d
+    );
   }
 }
 
@@ -86,46 +112,61 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
       CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[offset]
     );
   } else if( info.pimAccType == PIM_ACCESS_TYPE::FUNC ) {
-    // 8 functions
-    unsigned f_idx = ( addr >> 3 ) & 0x7;
-    assert(f_idx < SST::PIM::FUNC_SIZE );
-    assert( (addr & 0x7) == 0 ); // byte aligned
-    assert( numBytes == 8 );
-
-    // Grab the payload
+    // Decode function number and grab the payload
+    unsigned fnum = decodeFuncNum(addr, numBytes);
     uint64_t data = 0;
     uint8_t* p = (uint8_t*) ( &data );
     for( int i = 0; i < numBytes; i++ )
       p[i] = payload->at( i );
-  
-    output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE FUNCTION[%d] D=0x%" PRIx64 "\n", f_idx, id, data );
-    //(function_write[f_idx])( data );
+
+    output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE FUNC[%d] D=0x%" PRIx64 "\n", id, fnum, data );
+    funcState[fnum]->writeFSM(data);
   } else {
     assert( false );
   }
 }
 
-void TCLPIM::function_write( unsigned offset ) {
-  assert( offset < 4 );
-  PIM_FUNCTION_CONTROL ctloff = static_cast<PIM_FUNCTION_CONTROL>( offset );
-  //cout << "F0[" << PIM_OFFSET2string.at(ctloff) << "] <- 0x" << hex << ctl_buf << endl;
-  switch( ctloff ) {
-  case PIM_FUNCTION_CONTROL::EVENTS: ctl_event = ctl_buf; break;
-  case PIM_FUNCTION_CONTROL::EXEC:
-    ctl_exec = ctl_buf;
-    // ctl_ops : node, src, dst, word_count
-    dma->start( ctl_ops[1], ctl_ops[2], ctl_ops[3] );
-    ctl_ops.clear();
-    break;
-  case PIM_FUNCTION_CONTROL::LOCK: ctl_locked = ctl_buf; break;
-  case PIM_FUNCTION_CONTROL::OPERANDS:
-    ctl_ops.push_back( ctl_buf );
-    break;
-    break;
-  default: {
-    assert( false );
-  } break;
+void TCLPIM::FuncState::writeFSM(uint64_t d)
+{
+  switch (fstate) {
+    case FSTATE::DONE:
+    case FSTATE::INVALID:
+      if (static_cast<FUNC_CMD>(d) == FUNC_CMD::INIT) {
+        fstate = FSTATE::INITIALIZING;
+        counter = 0;
+      } else  { 
+        assert(false);
+      }
+      break;
+    case FSTATE::INITIALIZING:
+      params[counter++] = d;
+      if (counter == NUM_FUNC_PARAMS)
+        fstate = FSTATE::READY;
+      break;
+    case FSTATE::READY:
+      if (static_cast<FUNC_CMD>(d) == FUNC_CMD::RUN) {
+        //fstate = FSTATE::RUNNING;
+        fstate = FSTATE::DONE;
+        counter = 0;
+        parent->output->verbose(
+          CALL_INFO, 3, 0, 
+          "Starting Function[%d]( 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " )\n",
+          fnum, params[0], params[1], params[2]);
+      } else {
+        assert(false);
+      }
+      break;
+    case FSTATE::RUNNING:
+        fstate = FSTATE::DONE;
+        counter = 0;
+        parent->output->verbose( CALL_INFO, 3, 0, "Function[%d] Done", fnum );
+      break;
   }
+}
+
+uint64_t TCLPIM::FuncState::readFSM()
+{
+    return static_cast<uint64_t>(fstate);
 }
 
 TCLPIM::SimpleDMA::SimpleDMA( TCLPIM* p ) : parent( p ) {};
@@ -186,4 +227,6 @@ unsigned TCLPIM::SimpleDMA::clock() {
   return 0;
 }
 
-} //namespace
+
+
+} // namespace

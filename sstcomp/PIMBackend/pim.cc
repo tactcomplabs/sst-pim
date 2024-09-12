@@ -196,6 +196,7 @@ unsigned TestPIM::SimpleDMA::clock() {
   return 0;
 }
 
-}  // namespace SST::PIM
+
+} // namespace SST::PIM
 
 // EOF

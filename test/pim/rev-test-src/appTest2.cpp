@@ -73,26 +73,30 @@ size_t theApp() {
   size_t time1, time2;
   REV_TIME( time1 );
   revpim::init(PIM::FUNC::F1, (void*)dram_dst, (void*)dram_src, xfr_size*sizeof(uint64_t));
-  // pim_init(F1, dram_dst, dram_src, xfr_size*sizeof(uint64_t))
-  // pim_start(F1)
-  // pim_wait(F1)
+  revpim::run(PIM::FUNC::F1);
   memcpy(dram_dst, dram_src, xfr_size*sizeof(uint64_t));
+  revpim::finish(PIM::FUNC::F1); // blocking
   REV_TIME( time2 );
   return time2 - time1;
 }
 #endif
 
 
-int check() {
+size_t check() {
   size_t time1, time2;
   REV_TIME( time1 );
   for (int i=0; i<xfr_size; i++) {
     if (check_data[i] != dram_src[i]) {
       printf("Failed: check_data[%d]=0x%lx dram_src[%d]=0x%lx\n",
               i, check_data[i], i, dram_src[i]);
-      return 1;
+      assert(false);
     }
-    assert(check_data[i] == dram_dst[i]); 
+    if (check_data[i] != dram_dst[i]) {
+      printf("Failed: check_data[%d]=0x%lx dram_dst[%d]=0x%lx\n",
+              i, check_data[i], i, dram_dst[i]);
+      assert(false);
+    }
+
   }
   REV_TIME( time2 );
   return time2 - time1;

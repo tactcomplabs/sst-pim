@@ -248,7 +248,7 @@ void PIMBackend::handleMMIOWriteCompletion( SST::Event* ev ) {
   // write event payload to PIM
   buffer        = mev->getPayload();
   pimsim->write( mev->getAddr(), mev->getSize(), &buffer );
-  pimOutput.verbose(CALL_INFO,3,0,"MMIO write a=0x%" PRIx64 "d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
+  pimOutput.verbose(CALL_INFO,3,0,"MMIO write a=0x%" PRIx64 " d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
 }
 
 void PIMBackend::setup() {

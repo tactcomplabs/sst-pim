@@ -5,7 +5,7 @@ if (SSTPIM_ENABLE_TESTING)
         COMMAND run.bash 0)
     set_tests_properties("PIM-REV"
         PROPERTIES 
-        TIMEOUT 30
+        TIMEOUT 15
         LABELS "all"
     )
 
@@ -14,7 +14,7 @@ if (SSTPIM_ENABLE_TESTING)
     COMMAND run.bash 1)
     set_tests_properties("PIM-APPX"
         PROPERTIES 
-        TIMEOUT 30
+        TIMEOUT 15
         LABELS "all"
     )
 endif()
