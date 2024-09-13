@@ -17,6 +17,7 @@ mkdir build
 cd build
 cmake ../
 make -j -s
+make install
 ctest
 ```
 
@@ -50,7 +51,7 @@ The finite state machines (FSMs) are in sstcomp/PIMBackend:
 # TODO
 
 ## Linker Script
-- Link to standard libraries so we can parse command link arguments.
+- Link to standard libraries so we can parse command line arguments.
 - Eliminate initialization of global memory segments in the linker script.
 
 ## PIM FSM
