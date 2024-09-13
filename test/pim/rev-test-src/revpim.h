@@ -26,7 +26,7 @@ volatile uint64_t func[PIM::FUNC_SIZE] __attribute__((section(".func_base")));
 // Initialization functions
 //
 const unsigned NUM_REV_FUNC_PARAMS = PIM::NUM_FUNC_PARAMS;
-void init(PIM::FUNC f, 
+void init(PIM::FUNC_NUM f, 
     uint64_t p0=0, uint64_t p1=0, uint64_t p2=0, uint64_t p3=0,
     uint64_t p4=0, uint64_t p5=0, uint64_t p6=0, uint64_t p7=0 ) 
 {
@@ -44,17 +44,17 @@ void init(PIM::FUNC f,
     func[f_idx] = p7;
 }
 
-void init(PIM::FUNC f, void* ptr0, void* ptr1, size_t sz) {
+void init(PIM::FUNC_NUM f, void* ptr0, void* ptr1, size_t sz) {
     init(f, reinterpret_cast<uint64_t>(ptr0), reinterpret_cast<uint64_t>(ptr1), reinterpret_cast<uint64_t>(sz));
 }
 
-void run(PIM::FUNC f) {
+void run(PIM::FUNC_NUM f) {
     unsigned f_idx = static_cast<unsigned>(f);
     assert(f_idx<PIM::FUNC_SIZE);
     func[f_idx] = static_cast<uint64_t>(PIM::FUNC_CMD::RUN);
 }
 
-void finish(PIM::FUNC f) {
+void finish(PIM::FUNC_NUM f) {
     unsigned f_idx = static_cast<unsigned>(f);
     assert(f_idx<PIM::FUNC_SIZE);
     PIM::FSTATE state = static_cast<PIM::FSTATE>(func[f_idx]);

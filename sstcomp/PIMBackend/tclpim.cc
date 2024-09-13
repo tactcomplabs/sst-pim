@@ -7,6 +7,7 @@
 
 #include "tclpim.h"
 #include "tclpim_functions.h"
+#include "userpim_functions.h"
 
 namespace SST::PIM {
 
@@ -17,10 +18,13 @@ TCLPIM::TCLPIM( uint64_t node, SST::Output* o ) : PIM( o ) {
   output->verbose( CALL_INFO, 1, 0, "Creating TCLPIM node=%" PRId64 " id=0x%" PRIx64 "\n", node, id );
   // mmio decoder
   pimDecoder = new PIMDecoder( node );
-  // Built-in functions
-  funcState.resize(NUM_FUNCS);
-  for (unsigned i=0; i<NUM_FUNCS; i++ )
-    funcState[i] = std::make_unique<FuncState>(this, i, std::make_unique<MemCopy>(this));
+
+  // PIM FSM Assignments
+  // Built-in function 1: MemCopy
+  funcState[FUNC_NUM::F1] = std::make_unique<FuncState>(this, FUNC_NUM::F1, std::make_unique<MemCopy>(this));
+  // User function 5: MulVectByScalar
+  funcState[FUNC_NUM::U5] = std::make_unique<FuncState>(this, FUNC_NUM::U5, std::make_unique<MulVecByScalar>(this));
+
 }
 
 TCLPIM::~TCLPIM() {
@@ -29,12 +33,12 @@ TCLPIM::~TCLPIM() {
 }
 
 bool TCLPIM::clock( SST::Cycle_t cycle ) {
-  this->cycle = cycle;  
-  for ( int fnum=0; fnum<16; fnum++) {
-    if (funcState[fnum]->running()) {
-      uint64_t done = funcState[fnum]->exec->clock();
+  this->cycle = cycle;
+  for (auto func : funcState ) {
+    if (func.second->running()) {
+      uint64_t done = func.second->exec()->clock();
       if (done) {
-        funcState[fnum]->writeFSM(FUNC_CMD::FINISH);
+        func.second->writeFSM(FUNC_CMD::FINISH);
         return true;
       }
     }
@@ -77,7 +81,7 @@ void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload )
   } else {
     unsigned fnum = decodeFuncNum(addr, numBytes);
     output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ FUNC[%d]\n", id, fnum );
-    uint64_t d = funcState[fnum]->readFSM();
+    uint64_t d = funcState[static_cast<FUNC_NUM>(fnum)]->readFSM();
     uint8_t* p = (uint8_t*) ( &d );
     for( unsigned i = 0; i < numBytes; i++ ) {
       payload[i] = p[i];
@@ -104,7 +108,7 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
     unsigned byte   = ( addr & 0x7 );
     assert( ( byte + numBytes ) <= 8 );  // 8 byte aligned only
     uint8_t* p = (uint8_t*) ( &( spdArray[offset] ) );
-    for( int i = 0; i < numBytes; i++ ) {
+    for( unsigned i = 0; i < numBytes; i++ ) {
       p[byte + i] = payload->at( i );
     }
     output->verbose(
@@ -119,16 +123,15 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
       p[i] = payload->at( i );
 
     output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE FUNC[%d] D=0x%" PRIx64 "\n", id, fnum, data );
-    funcState[fnum]->writeFSM(data);
+    funcState[static_cast<FUNC_NUM>(fnum)]->writeFSM(data);
   } else {
     assert( false );
   }
 }
 
-TCLPIM::FuncState::FuncState(TCLPIM *p, unsigned n, std::unique_ptr<FSM> fsm) : parent(p), fnum(n)
-{
-  exec = std::move(fsm);
-}
+TCLPIM::FuncState::FuncState(TCLPIM *p, FUNC_NUM fnum, std::shared_ptr<FSM> fsm) 
+: parent(p), fnum(fnum), exec_(fsm)
+{}
 
 void TCLPIM::FuncState::writeFSM(uint64_t d)
 {
@@ -158,7 +161,7 @@ void TCLPIM::FuncState::writeFSM(uint64_t d)
           params[0], params[1], params[2], params[3],
           params[4], params[5], params[6], params[7]
         );
-        exec->start(params);
+        exec()->start(params);
       } else {
         assert(false);
       }
@@ -186,5 +189,15 @@ bool TCLPIM::FuncState::running()
     return fstate==FSTATE::RUNNING;
 }
 
+std::shared_ptr<FSM> TCLPIM::FuncState::exec()
+{
+    assert(exec_);
+    return exec_;
+}
+
+void TCLPIM::FuncState::setFSM(std::shared_ptr<FSM> fsm)
+{
+  exec_ = fsm;
+}
 
 } // namespace

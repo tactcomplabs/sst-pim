@@ -34,14 +34,13 @@ namespace SST::PIM
     // FUNC Access
     enum class FUNC_CMD : int { INIT, RUN, FINISH };
 
-    // Enumerated functions
-    enum class FUNC    : int { 
+    // Function ID Convenience
+    const unsigned NUM_FUNCS = 16;
+    enum class FUNC_NUM    : int { 
         F0, F1, F2, F3, F4, F5, F6, F7, 
         U0, U1, U2, U3, U4, U5, U6, U7
     };
-
-    const unsigned NUM_FUNCS = 16;
-
+    
     // Number of funtion params to send on init
     const unsigned NUM_FUNC_PARAMS = 8;
 

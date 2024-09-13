@@ -29,19 +29,23 @@ public:
   // Primary functional state machine
   class FuncState {
   public:
-    FuncState( TCLPIM* p, unsigned n, std::unique_ptr<FSM> fsm);
+    FuncState( TCLPIM* p, FUNC_NUM fn, std::shared_ptr<FSM> fsm);
+    void setFSM(std::shared_ptr<FSM> fsm);
     void writeFSM(FUNC_CMD cmd);
     void writeFSM(uint64_t d);
     uint64_t readFSM();
     bool running();
-    std::unique_ptr<FSM> exec = nullptr;
+    std::shared_ptr<FSM> exec();
+    
   private:
     TCLPIM* parent;
-    unsigned fnum;
+    FUNC_NUM fnum;
+    std::shared_ptr<FSM> exec_ = nullptr;
     uint64_t params[NUM_FUNC_PARAMS] = {0};
     FSTATE fstate = FSTATE::INVALID;
     bool lock = false;
     int counter = 0;
+
   }; // class FuncState
 
 private:
@@ -55,7 +59,7 @@ private:
   std::deque<uint64_t> ctl_ops;
   void                 function_write( uint64_t data );
   uint64_t             decodeFuncNum( uint64_t address, unsigned numBytes );
-  std::vector<std::unique_ptr<FuncState>> funcState;
+  std::map< FUNC_NUM, shared_ptr<FuncState>> funcState;
 
 };  //class TCLPIM
 
