@@ -20,7 +20,7 @@ TCLPIM::TCLPIM( uint64_t node, SST::Output* o ) : PIM( o ) {
   // Built-in functions
   funcState.resize(NUM_FUNCS);
   for (unsigned i=0; i<NUM_FUNCS; i++ )
-    funcState[i] = std::make_unique<FuncState>(this, i);
+    funcState[i] = std::make_unique<FuncState>(this, i, std::make_unique<MemCopy>(this));
 }
 
 TCLPIM::~TCLPIM() {
@@ -125,9 +125,9 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
   }
 }
 
-TCLPIM::FuncState::FuncState(TCLPIM *p, unsigned n) : parent(p), fnum(n)
+TCLPIM::FuncState::FuncState(TCLPIM *p, unsigned n, std::unique_ptr<FSM> fsm) : parent(p), fnum(n)
 {
-  exec = make_unique<MemCopy>(p);
+  exec = std::move(fsm);
 }
 
 void TCLPIM::FuncState::writeFSM(uint64_t d)

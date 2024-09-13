@@ -29,12 +29,12 @@ public:
   // Primary functional state machine
   class FuncState {
   public:
-    FuncState( TCLPIM* p, unsigned n);
+    FuncState( TCLPIM* p, unsigned n, std::unique_ptr<FSM> fsm);
     void writeFSM(FUNC_CMD cmd);
     void writeFSM(uint64_t d);
     uint64_t readFSM();
     bool running();
-    std::unique_ptr<FSM> exec;
+    std::unique_ptr<FSM> exec = nullptr;
   private:
     TCLPIM* parent;
     unsigned fnum;
