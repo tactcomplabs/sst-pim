@@ -44,8 +44,12 @@ void init(PIM::FUNC_NUM f,
     func[f_idx] = p7;
 }
 
-void init(PIM::FUNC_NUM f, void* ptr0, void* ptr1, size_t sz) {
-    init(f, reinterpret_cast<uint64_t>(ptr0), reinterpret_cast<uint64_t>(ptr1), reinterpret_cast<uint64_t>(sz));
+void init(PIM::FUNC_NUM f, uint64_t* ptr0, uint64_t* ptr1, size_t sz) {
+    init(f, reinterpret_cast<uint64_t>(ptr0), reinterpret_cast<uint64_t>(ptr1), sz);
+}
+
+void init(PIM::FUNC_NUM f, uint64_t* ptr0, uint64_t* ptr1, uint64_t scalar, size_t sz) {
+    init(f, reinterpret_cast<uint64_t>(ptr0), reinterpret_cast<uint64_t>(ptr1), scalar, sz);
 }
 
 void run(PIM::FUNC_NUM f) {

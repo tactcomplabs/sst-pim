@@ -12,13 +12,13 @@ namespace SST::PIM {
 MulVecByScalar::MulVecByScalar( TCLPIM* p ) : FSM( p ) {};
 
 void MulVecByScalar::start( uint64_t params[NUM_FUNC_PARAMS] ) {
-  uint64_t numBytes = params[2];
+  uint64_t numBytes = params[3];
   if( numBytes == 0 )
     return;
   assert((numBytes%8)==0);
-  this->dst    = params[1];
-  this->src    = params[2];
-  this->scalar = 10;
+  this->dst    = params[0];
+  this->src    = params[1];
+  this->scalar = params[2];
   total_words  = numBytes/8;
   word_counter = numBytes/8;
   dma_state    = DMA_STATE::READ;
@@ -42,8 +42,19 @@ bool MulVecByScalar::clock() {
   if( dma_state == DMA_STATE::READ ) {
     parent->m_issueDRAMRequest( src, &parent->buffer, READ, [this]( const MemEventBase::dataVec& d ) {
       assert( parent->buffer.size() == d.size() );
-      for( int i = 0; i < d.size(); i++ ) {
-        parent->buffer[i] = d[i];
+      // TODO use SRAM to save intermediate data
+      // TODO better utilities for manage the SST payload
+      // For now multiply every dword loaded by the scalar (messy)
+      for( int i = 0; i < d.size(); i+=8 ) {
+        uint64_t data = 0;
+        uint8_t* p = (uint8_t*)(&data);
+        for ( int j=0; j<8; j++) {
+          p[j] = d[i+j];
+        }
+        data = scalar*data;
+        for (int j=0;j<8;j++) {
+          parent->buffer[i+j] = p[j];
+        }
       }
       dma_state = DMA_STATE::WRITE;
     } );
@@ -70,7 +81,5 @@ bool MulVecByScalar::clock() {
   }
   return false;
 }
-
-
 
 } // namespace

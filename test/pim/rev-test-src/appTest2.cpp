@@ -72,7 +72,7 @@ size_t theApp() {
 size_t theApp() {
   size_t time1, time2;
   REV_TIME( time1 );
-  revpim::init(PIM::FUNC_NUM::F1, (void*)dram_dst, (void*)dram_src, xfr_size*sizeof(uint64_t));
+  revpim::init(PIM::FUNC_NUM::F1, dram_dst, dram_src, xfr_size*sizeof(uint64_t));
   revpim::run(PIM::FUNC_NUM::F1);
   revpim::finish(PIM::FUNC_NUM::F1); // blocking polling loop :(
   REV_TIME( time2 );
