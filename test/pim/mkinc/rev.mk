@@ -57,7 +57,8 @@ compile: $(EXES) $(DIASMS)
 # Rev toolchain
 CC=riscv64-unknown-elf-g++
 LD=riscv64-unknown-elf-ld
-OBJDUMP   = riscv64-unknown-elf-objdump --source -l -dC -Mno-aliases
+RVOBJDUMP=riscv64-unknown-elf-objdump
+OBJDUMP   = ${RVOBJDUMP} --source -l -dC -Mno-aliases
 
 # Rev headers
 INCLUDE  += -I$(PIM_REV_HOME)/common/syscalls
