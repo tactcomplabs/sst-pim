@@ -206,7 +206,7 @@ l1cache_params = {
 PIM_REGION_BASE=0x0E000000             # FUNC_BASE
 PIM_REGION_BOUND=0x0f800000+0x00100000 # DRAM_BASE + DRAM_SIZE
 l1cache_ifc_params = {
-    "noncacheable_regions": [PIM_REGION_BASE, PIM_REGION_BASE+PIM_REGION_BOUND-1]
+    "noncacheable_regions": [PIM_REGION_BASE, PIM_REGION_BOUND-1]
 }
 
 l2cache_params = {
