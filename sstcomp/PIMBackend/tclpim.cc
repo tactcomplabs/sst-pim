@@ -156,8 +156,8 @@ void TCLPIM::FuncState::writeFSM(uint64_t d)
         counter = 0;
         parent->output->verbose(
           CALL_INFO, 3, 0, 
-          "Starting Function[%d]( 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 "0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " )\n",
-          fnum, 
+          "Starting Function[%" PRId32 "]( 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 "0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " )\n",
+          static_cast<int>(fnum), 
           params[0], params[1], params[2], params[3],
           params[4], params[5], params[6], params[7]
         );
@@ -169,7 +169,7 @@ void TCLPIM::FuncState::writeFSM(uint64_t d)
     case FSTATE::RUNNING:
         fstate = FSTATE::DONE;
         counter = 0;
-        parent->output->verbose( CALL_INFO, 3, 0, "Function[%d] Done\n", fnum );
+        parent->output->verbose( CALL_INFO, 3, 0, "Function[%" PRId32 "] Done\n", static_cast<int>(fnum) );
       break;
   }
 }

@@ -40,7 +40,7 @@ bool MemCopy::clock() {
   if( dma_state == DMA_STATE::READ ) {
     parent->m_issueDRAMRequest( src, &parent->buffer, READ, [this]( const MemEventBase::dataVec& d ) {
       assert( parent->buffer.size() == d.size() );
-      for( int i = 0; i < d.size(); i++ ) {
+      for( size_t i = 0; i < d.size(); i++ ) {
         parent->buffer[i] = d[i];
       }
       dma_state = DMA_STATE::WRITE;

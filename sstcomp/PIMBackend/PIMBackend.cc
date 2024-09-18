@@ -210,7 +210,7 @@ void PIMBackend::handlePIMCompletion( SST::Event* resp ) {
       size_t                sz  = mev->getPayloadSize();
       MemEventBase::dataVec vec = mev->getPayload();
       uint8_t*              p   = (uint8_t*) &payload;
-      for( int i = 0; i < sz; i++ ) {
+      for( size_t i = 0; i < sz; i++ ) {
         p[i] = vec[i];
       }
     }

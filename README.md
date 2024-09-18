@@ -4,6 +4,9 @@ This project provides a set of SST components that provide methods to model Proc
 
 The PIM provides a user extensible finite state machine (FSM) that allows sequencing access to/from a region of DRAM and to/from a local SRAM.
 
+## Supported Platforms
+
+Currently only MacOS is supported.
 
 ## Getting Started
 
@@ -52,6 +55,7 @@ The finite state machines (FSMs) are in sstcomp/PIMBackend:
 
 ## Linker Script
 - Link to standard libraries so we can parse command line arguments.
+- Resolve issue restricting us to use MacOS only ( tests fail on Linux )
 - Eliminate initialization of global memory segments in the linker script.
 
 ## PIM FSM
@@ -63,4 +67,7 @@ The finite state machines (FSMs) are in sstcomp/PIMBackend:
 
 ## SST Configuration
 - Control regions for Cachability. Currently all REV accesses are non-cachable. Good for latency but it does not represent real-world hardware.
+
+## Code Quality
+- There are a number of compiler warnings in SST includes. Consider bringing these in locally and fixing the warnings ( posibbly followed by SST PRs )
 
