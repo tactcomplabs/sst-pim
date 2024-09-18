@@ -43,7 +43,7 @@ public:
     std::shared_ptr<FSM> exec_ = nullptr;
     uint64_t params[NUM_FUNC_PARAMS] = {0};
     FSTATE fstate = FSTATE::INVALID;
-    bool lock = false;
+    // TODO bool lock = false;
     int counter = 0;
 
   }; // class FuncState
