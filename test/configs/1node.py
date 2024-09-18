@@ -165,8 +165,8 @@ rev_params = {
     "machine" : "[CORES:RV64GC]",                    # Core:Config
     "memCost" : "[0:1:10]",                          # Memory loads required 1-10 cycles
     "program" : os.getenv("REV_EXE", "sanity.exe"),  # Target executable
-    "enable_memH" : 1,                               # Enable memHierarchy support
-    "trcStartCycle" : 1,                             # Begin cycle for tracing
+    "enableMemH" : 1,                                # Enable memHierarchy support
+    #"trcStartCycle" : 1,                           # Begin cycle for tracing
     #"trcLimit" : 100,                               # End cycle for tracing
     "splash" : 0,                                    # Display the splash message
 }
