@@ -11,8 +11,6 @@ set(AppGenSrcs
   app.cc
   app.h
   appLink.h
-  appTest.cc
-  appTest.h
   appTransactor.cc
   appTransactor.h
   mirandaCPU_kg.cc

@@ -90,9 +90,20 @@ struct PIMDecodeInfo {
 class PIMDecoder {
 public:
   // Important: must match RevMem::IOMemoryHolePunch() must match
-  const uint64_t SEG_SIZE = DRAM_BASE * sizeof( uint64_t );
   PIMDecoder( uint64_t node = 0 );
-  PIMDecodeInfo decode( const uint64_t& addr );
+  static PIMDecodeInfo decode( const uint64_t& addr );
+
+  static void setPIMSegments(
+    const unsigned funcBaseAddr,
+    const unsigned sramBaseAddr,
+    const unsigned dramBaseAddr,
+    const unsigned regBoundAddr);
+
+  static inline unsigned _funcBaseAddr;
+  static inline unsigned _sramBaseAddr;
+  static inline unsigned _dramBaseAddr;
+  static inline unsigned _regBoundAddr;
+  static inline bool _allSegmentsInit = false;
 
 private:
   std::vector<std::shared_ptr<PIMMemSegment>> PIMSegs;

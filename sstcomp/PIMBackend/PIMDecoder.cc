@@ -10,28 +10,63 @@
 
 namespace SST::PIM {
 
+//TODO remove dependencies
 PIMDecoder::PIMDecoder( uint64_t _node ) : node( _node ) {
   assert(node==0);
   // TODO nodeOffset = node * NODE_OFFSET_MULTIPLIER
   nodeOffset=0;
-  PIMSegs.emplace_back( std::make_shared<PIMMemSegment>( PIM_ACCESS_TYPE::DRAM, DRAM_BASE, SEG_SIZE ) );
-  PIMSegs.emplace_back( std::make_shared<PIMMemSegment>( PIM_ACCESS_TYPE::SRAM, SRAM_BASE + nodeOffset, SEG_SIZE ) );
-  PIMSegs.emplace_back( std::make_shared<PIMMemSegment>( PIM_ACCESS_TYPE::FUNC, FUNC_BASE + nodeOffset, SEG_SIZE ) );
 };
 
 PIMDecodeInfo PIMDecoder::decode( const uint64_t& addr ) {
+  assert(_allSegmentsInit);
   PIMDecodeInfo info;
-  for( auto seg : PIMSegs ) {
-    if( seg->decode( addr ) != PIM_ACCESS_TYPE::NONE ) {
-      info.pimAccType = seg->getType();
-      break;
-    }
+
+  if(addr < _funcBaseAddr) {
+    return info;
   }
-  info.isIO   = ( info.pimAccType == PIM_ACCESS_TYPE::FUNC ) || ( info.pimAccType == PIM_ACCESS_TYPE::SRAM );
-  info.isDRAM = info.pimAccType == PIM_ACCESS_TYPE::DRAM;
+
+  if(addr < _sramBaseAddr){
+    info.pimAccType = PIM_ACCESS_TYPE::FUNC;
+    info.isIO = true;
+    info.isDRAM = false;
+    return info;
+  }
+
+  if(addr < _dramBaseAddr){
+    info.pimAccType = PIM_ACCESS_TYPE::SRAM;
+    info.isIO = true;
+    info.isDRAM = false;
+    return info;
+  }
+
+  if(addr < _regBoundAddr){
+    info.pimAccType = PIM_ACCESS_TYPE::DRAM;
+    info.isIO = false;
+    info.isDRAM = true;
+    return info;
+  }
+
   return info;
 }
 
+void PIMDecoder::setPIMSegments(  const unsigned funcBaseAddr,
+                                  const unsigned sramBaseAddr,
+                                  const unsigned dramBaseAddr,
+                                  const unsigned regBoundAddr) {
+    assert(!_allSegmentsInit);
+    assert((funcBaseAddr & 0x7) == 0);
+    assert((sramBaseAddr & 0x7) == 0);
+    assert((dramBaseAddr & 0x7) == 0);
+    assert((regBoundAddr & 0x7) == 0);
+    assert(sramBaseAddr >= (funcBaseAddr + (SST::PIM::FUNC_LEN * sizeof(uint64_t))));
+    assert(dramBaseAddr > sramBaseAddr);
+    assert(regBoundAddr > dramBaseAddr);
+    _funcBaseAddr = funcBaseAddr;
+    _sramBaseAddr = sramBaseAddr;
+    _dramBaseAddr = dramBaseAddr;
+    _regBoundAddr = regBoundAddr;
+    _allSegmentsInit = true;
+  };
 }  // namespace SST::PIM
 
 // EOF

@@ -81,6 +81,15 @@ PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( i
     delay_self_link = NULL;
   }
 
+  // Set up PIM memory segments
+  const unsigned funcBaseAddr = params.find<uint32_t>( "func_base_addr", DEFAULT_FUNC_BASE_ADDR );
+  const unsigned sramBaseAddr = params.find<uint32_t>( "sram_base_addr", DEFAULT_SRAM_BASE_ADDR );
+  const unsigned dramBaseAddr = params.find<uint32_t>( "dram_base_addr", DEFAULT_DRAM_BASE_ADDR );
+  const unsigned regBoundAddr = params.find<uint32_t>( "reg_bound_addr", DEFAULT_REG_BOUND_ADDR );
+  pimOutput.verbose( CALL_INFO, 3, 0, " pim_func_base_addr=0x%" PRIx32 " pim_sram_base_addr=0x%" PRIx32 " pim_dram_base_addr=0x%" PRIx32 " pim_reg_bound_addr=0x%\n" PRIx32,
+    funcBaseAddr, sramBaseAddr, dramBaseAddr, regBoundAddr );
+  PIMDecoder::setPIMSegments(funcBaseAddr,sramBaseAddr,dramBaseAddr,regBoundAddr);
+
   // Create the PIM
   pim_type            = params.find<uint32_t>( "pim_type", PIM_TYPE_TEST );
   num_nodes = params.find<unsigned>( "num_nodes", 0 );
@@ -106,7 +115,7 @@ PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( i
 
   // TODO multiple controllers per memory
   uint64_t Loff = 0;
-  spdBase       = SRAM_BASE + Loff;
+  spdBase       = sramBaseAddr + Loff;
 }
 
 PIMBackend::~PIMBackend() {
@@ -243,10 +252,11 @@ void PIMBackend::handleMMIOReadCompletion( SST::Event* ev ) {
   buffer.resize( mev->getSize() );
   pimsim->read( mev->getAddr(), mev->getSize(), buffer );
   mev->setPayload( buffer );
-  pimOutput.verbose(CALL_INFO,3,0,"MMIO read a=0x%" PRIx64 "d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
+  pimOutput.verbose(CALL_INFO,3,0,"MMIO read a=0x%" PRIx64 " d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
 }
 
 void PIMBackend::handleMMIOWriteCompletion( SST::Event* ev ) {
+  assert( pimsim );
   MemEvent* mev = static_cast<MemEvent*>( ev );
   // write event payload to PIM
   buffer        = mev->getPayload();

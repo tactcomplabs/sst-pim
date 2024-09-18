@@ -123,8 +123,16 @@ SUPPORTED_MEMORY_MODELS = ["simpleMem","dramsim3"]
 MEMORY_MODEL = os.getenv("MEMORY_MODEL","simpleMem")
 MEMORY_CONTROLLER = "PIM.PIMMemController"
 
-PIM_TYPE = os.getenv("PIM_TYPE","0")  # 0:none, 1:test, 2:reserved, 3:tclpim
-print(f"PIM_TYPE={PIM_TYPE}")
+PIM_TYPE = os.getenv("PIM_TYPE","3")  # 0:none, 1:test, 2:reserved, 3:tclpim
+PIM_FUNC_BASE_ADDR = os.getenv("PIM_FUNC_BASE_ADDR",0x0E000000)
+PIM_SRAM_BASE_ADDR = os.getenv("PIM_SRAM_BASE_ADDR",0x0E000100)
+PIM_DRAM_BASE_ADDR = os.getenv("PIM_DRAM_BASE_ADDR",0x0E000500)
+PIM_REG_BOUND_ADDR = os.getenv("PIM_REG_BOUND_ADDR",0x0E400500)
+print(f"PIM_TYPE={PIM_TYPE}\n" +
+      f"PIM_FUNC_BASE_ADDR={hex(PIM_FUNC_BASE_ADDR)}\n" +
+      f"PIM_SRAM_BASE_ADDR={hex(PIM_SRAM_BASE_ADDR)}\n" +
+      f"PIM_DRAM_BASE_ADDR={hex(PIM_DRAM_BASE_ADDR)}\n" +
+      f"PIM_REG_BOUND_ADDR={hex(PIM_REG_BOUND_ADDR)}")
 
 if MEMORY_MODEL not in SUPPORTED_MEMORY_MODELS:
     sys.exit(f"MEMORY_MODEL must be one of: {SUPPORTED_MEMORY_MODELS}")
@@ -203,10 +211,8 @@ l1cache_params = {
     "replacement_policy" : "lru",
 }
 
-PIM_REGION_BASE=0x0E000000             # FUNC_BASE
-PIM_REGION_BOUND=0x0f800000+0x00100000 # DRAM_BASE + DRAM_SIZE
 l1cache_ifc_params = {
-    "noncacheable_regions": [PIM_REGION_BASE, PIM_REGION_BOUND-1]
+    "noncacheable_regions": [PIM_FUNC_BASE_ADDR, PIM_REG_BOUND_ADDR-1]
 }
 
 l2cache_params = {
@@ -493,7 +499,11 @@ class NODE():
             "node_id" : node,
             "max_requests_per_cycle" : 128,
             "request_delay" : "1ns",
-            "pim_type" : PIM_TYPE
+            "pim_type" : PIM_TYPE,
+            "func_base_addr" : PIM_FUNC_BASE_ADDR,
+            "sram_base_addr" : PIM_SRAM_BASE_ADDR,
+            "dram_base_addr" : PIM_DRAM_BASE_ADDR,
+            "reg_bound_addr" : PIM_REG_BOUND_ADDR
         })
         self.pimbackend.addParams( backend_params )
 

@@ -20,7 +20,7 @@ using namespace SST;
 
 namespace revpim {
 
-volatile uint64_t func[PIM::FUNC_SIZE] __attribute__((section(".func_base")));
+volatile uint64_t func[PIM::FUNC_LEN] __attribute__((section(".func_base")));
 
 //
 // Initialization functions
@@ -31,7 +31,7 @@ void init(PIM::FUNC_NUM f,
     uint64_t p4=0, uint64_t p5=0, uint64_t p6=0, uint64_t p7=0 ) 
 {
     unsigned f_idx = static_cast<unsigned>(f);
-    assert(f_idx<PIM::FUNC_SIZE);
+    assert(f_idx<PIM::FUNC_LEN);
     // initialization packet sent sequentially to same MMIO address
     func[f_idx] = static_cast<uint64_t>(PIM::FUNC_CMD::INIT);
     func[f_idx] = p0;
@@ -54,13 +54,13 @@ void init(PIM::FUNC_NUM f, uint64_t* ptr0, uint64_t* ptr1, uint64_t scalar, size
 
 void run(PIM::FUNC_NUM f) {
     unsigned f_idx = static_cast<unsigned>(f);
-    assert(f_idx<PIM::FUNC_SIZE);
+    assert(f_idx<PIM::FUNC_LEN);
     func[f_idx] = static_cast<uint64_t>(PIM::FUNC_CMD::RUN);
 }
 
 void finish(PIM::FUNC_NUM f) {
     unsigned f_idx = static_cast<unsigned>(f);
-    assert(f_idx<PIM::FUNC_SIZE);
+    assert(f_idx<PIM::FUNC_LEN);
     PIM::FSTATE state = static_cast<PIM::FSTATE>(func[f_idx]);
     if (state == PIM::FSTATE::INVALID) {
         assert(false);

@@ -57,9 +57,9 @@ bool TCLPIM::isMMIO( uint64_t addr ) {
 
 uint64_t TCLPIM::decodeFuncNum(uint64_t a, unsigned numBytes)
 {
-    // 16 functions
-    unsigned n = ( a >> 3 ) & 0xf;
-    assert(n < SST::PIM::FUNC_SIZE );
+    // 32 functions
+    unsigned n = ( a >> 3 ) & SST::PIM::FUNC_LEN-1;
+    assert(n < SST::PIM::FUNC_LEN );
     assert( (a & 0x7UL) == 0 ); // byte aligned
     assert( numBytes == 8 );
     return n;
@@ -81,7 +81,15 @@ void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload )
   } else {
     unsigned fnum = decodeFuncNum(addr, numBytes);
     output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ FUNC[%d]\n", id, fnum );
-    uint64_t d = funcState[static_cast<FUNC_NUM>(fnum)]->readFSM();
+
+    uint64_t d;
+    if(const auto func = funcState.find(static_cast<FUNC_NUM>(fnum)); func != funcState.end()){
+      d = func->second->readFSM();
+    }else {
+      output->verbose( CALL_INFO, 3, 0, "Warning: MMIO read from non-existent function handler fnum=%" PRIx32 "\n", fnum );
+      d = static_cast<uint64_t>(FSTATE::INVALID);
+    }
+
     uint8_t* p = (uint8_t*) ( &d );
     for( unsigned i = 0; i < numBytes; i++ ) {
       payload[i] = p[i];
@@ -123,7 +131,11 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
       p[i] = payload->at( i );
 
     output->verbose( CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE FUNC[%d] D=0x%" PRIx64 "\n", id, fnum, data );
-    funcState[static_cast<FUNC_NUM>(fnum)]->writeFSM(data);
+    if(const auto func = funcState.find(static_cast<FUNC_NUM>(fnum)); func != funcState.end()){
+      func->second->writeFSM(data);
+    }else {
+      output->verbose( CALL_INFO, 3, 0, "Warning: Dropping MMIO write to non-existent function handler fnum=%" PRIx32 "\n", fnum );
+    }
   } else {
     assert( false );
   }

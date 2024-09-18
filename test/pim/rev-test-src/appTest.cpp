@@ -26,6 +26,8 @@
 // rev_fast_print is limited to a format string and 6 simple numeric parameters
 //#define printf rev_fast_print
 
+#define SRAM_BASE 0xe000100
+
 using namespace SST;
 
 void send( PIM::SRAM_CMD cmd, uint64_t address, uint64_t data ) {
@@ -39,7 +41,7 @@ int theApp() {
   int      rc      = 0;
   uint64_t readBuf = 0;
   // read PIM_ID
-  uint64_t pimBase = PIM::SRAM_BASE;
+  uint64_t pimBase = SRAM_BASE;
   send( PIM::SRAM_CMD::READ, pimBase, 0 );
   rc = receive( readBuf );
   if( rc ) {

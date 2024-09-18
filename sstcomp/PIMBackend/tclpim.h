@@ -59,6 +59,9 @@ private:
   std::deque<uint64_t> ctl_ops;
   void                 function_write( uint64_t data );
   uint64_t             decodeFuncNum( uint64_t address, unsigned numBytes );
+
+  // Map of function MMIO registers.
+  // Do NOT lookup with operator[key]. Use find(key) instead
   std::map< FUNC_NUM, shared_ptr<FuncState>> funcState;
 
 };  //class TCLPIM
