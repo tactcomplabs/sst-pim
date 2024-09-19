@@ -20,7 +20,7 @@ using namespace SST::MemHierarchy;
 
 namespace SST::PIM {
 
-static uint64_t getPayload( std::vector<uint8_t> payload );
+// TODO static uint64_t getPayload( std::vector<uint8_t> payload );
 
 struct PIMReq_t {
   PIMReq_t( MemBackend::ReqId _id, Addr _addr, bool _isWrite, unsigned _numBytes, MemEventBase::dataVec _payload );

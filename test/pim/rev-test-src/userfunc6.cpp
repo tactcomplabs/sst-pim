@@ -17,8 +17,8 @@
 #include "revpim.h"
 
 // Select one and only one
-#define DO_LOOP 1
-// #define DO_PIM 1
+// #define DO_LOOP 1
+#define DO_PIM 1
 
 #define LFSR_SEED 0x1010101010101010ul
 #define N 512

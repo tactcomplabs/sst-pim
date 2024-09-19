@@ -87,7 +87,6 @@ print(f"INTERLEAVE={INTERLEAVE}")
 
 ARGS = os.getenv("ARGS","");
 
-# TODO Add directory, enable non-cacheable regions, default this to 0
 FORCE_NONCACHEABLE_REQS = os.getenv("FORCE_NONCACHEABLE_REQS",0)
 print(f"FORCE_NONCACHEABLE_REQS={FORCE_NONCACHEABLE_REQS}")
 
@@ -173,8 +172,8 @@ rev_params = {
     "machine" : "[CORES:RV64GC]",                    # Core:Config
     "memCost" : "[0:1:10]",                          # Memory loads required 1-10 cycles
     "program" : os.getenv("REV_EXE", "sanity.exe"),  # Target executable
-    "enable_memH" : 1,                               # Enable memHierarchy support
-    "trcStartCycle" : 1,                             # Begin cycle for tracing
+    "enableMemH" : 1,                                # Enable memHierarchy support
+    #"trcStartCycle" : 1,                           # Begin cycle for tracing
     #"trcLimit" : 100,                               # End cycle for tracing
     "splash" : 0,                                    # Display the splash message
 }
@@ -354,6 +353,9 @@ class APP_CPU():
         self.comp.addParams(miranda_params)
         self.comp.addParams( { "args" : cpu_args } )
         print(f"APP_CPU[{cpu_num}] args={cpu_args}")
+
+        # TODO: non-cacheable ranges for L1 interface then remove FORCE_NONCACHEABLE_REQS from mkinc/appx.mk
+
         # Miranda application transactor / generator
         self.gen = self.comp.setSubComponent("generator", f"AppGen.{APP}")
         self.gen.addParams(miranda_params)

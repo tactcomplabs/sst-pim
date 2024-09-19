@@ -13,7 +13,7 @@ export PIM_TYPE=3
 
 # REV paths
 REVLIBPATH ?= $(PIM_REV_HOME)/build/src
-REVPRINT ?= $(PROJHOME)/scripts/rev-print.sh
+REVPRINT ?= $(PIM_REV_HOME)/scripts/rev-print.py
 
 # Test source code
 SRCDIR = ./rev-test-src
@@ -25,7 +25,7 @@ SSTOPTS += --add-lib-path=$(REVLIBPATH)
 OUTDIR = rev-output
 
 # Test Selection
-PIM_TESTS += $(basename $(wildcard rev-test-src/*.cpp))
+PIM_TESTS += $(notdir $(basename $(wildcard $(SRCDIR)/*.cpp)))
 
 # PIM MPI tests
 # PIM_MPI_TESTS += 
@@ -111,7 +111,7 @@ ARCH      := rv64gc
 # 	@echo "### " $@":" `cat $(statf)`
 
 %.revlog: %.log
-	@ $(REVPRINT) $< > $@
+	@ $(REVPRINT) -l $< > $@
 
 %.dis: %.exe
 	$(OBJDUMP) $< > $@
@@ -119,12 +119,19 @@ ARCH      := rv64gc
 %.sections: %.exe
 	${RVOBJDUMP} -s $< > $@
 
+# NO_LINK = 1
+ifndef NO_LINK
 $(OUTDIR)/bin/%.exe: $(OUTDIR)/bin/%.o $(SRCDIR)/pim.lds
 	$(LD) -o $@ -T $(SRCDIR)/pim.lds $<
 
 $(OUTDIR)/bin/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(@D)
 	$(CC) $(FLAGS) -o $@ -g -c $< -march=$(ARCH) $(ABI) $(INCLUDE) $(LIBS)
+else
+$(OUTDIR)/bin/%.exe: $(SRCDIR)/%.cpp
+	@mkdir -p $(@D)
+	$(CC) $(FLAGS) -g -march=$(ARCH) $(ABI) $(INCLUDE) -o $@ $<
+endif
 
 # workaround for rev_openat on ubuntu
 .PHONY: %.dat
