@@ -88,7 +88,7 @@ print(f"INTERLEAVE={INTERLEAVE}")
 ARGS = os.getenv("ARGS","");
 
 # TODO Add directory, enable non-cacheable regions, default this to 0
-FORCE_NONCACHEABLE_REQS = os.getenv("FORCE_NONCACHEABLE_REQS",1)
+FORCE_NONCACHEABLE_REQS = os.getenv("FORCE_NONCACHEABLE_REQS",0)
 print(f"FORCE_NONCACHEABLE_REQS={FORCE_NONCACHEABLE_REQS}")
 
 # Memory: 0x0000_0400_0000_0000
@@ -203,6 +203,12 @@ l1cache_params = {
     "replacement_policy" : "lru",
 }
 
+PIM_REGION_BASE=0x0E000000             # FUNC_BASE
+PIM_REGION_BOUND=0x0f800000+0x00100000 # DRAM_BASE + DRAM_SIZE
+l1cache_ifc_params = {
+    "noncacheable_regions": [PIM_REGION_BASE, PIM_REGION_BOUND-1]
+}
+
 l2cache_params = {
     "cache_frequency" : timing_params['global_clock'],
     "cache_size" : "64 KiB",
@@ -313,6 +319,7 @@ class REV_CPU():
         self.revmemctrl.addParams(revmemctrl_params)
         # Rev Memory Interface
         self.ifc = self.revmemctrl.setSubComponent("memIface", "memHierarchy.standardInterface")
+        self.ifc.addParams(l1cache_ifc_params)
         # L1 Cache
         self.l1 = sst.Component(f"l1_{cpu_num}", "memHierarchy.Cache")
         self.l1.addParams(l1cache_params)
