@@ -24,6 +24,7 @@ TCLPIM::TCLPIM( uint64_t node, SST::Output* o ) : PIM( o ) {
   funcState[FUNC_NUM::F1] = std::make_unique<FuncState>(this, FUNC_NUM::F1, std::make_unique<MemCopy>(this));
   // User function 5: MulVectByScalar
   funcState[FUNC_NUM::U5] = std::make_unique<FuncState>(this, FUNC_NUM::U5, std::make_unique<MulVecByScalar>(this));
+  funcState[FUNC_NUM::U6] = std::make_unique<FuncState>(this, FUNC_NUM::U6, std::make_unique<LFSR>(this));
 
 }
 
@@ -124,7 +125,7 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
     );
   } else if( info.pimAccType == PIM_ACCESS_TYPE::FUNC ) {
     // Decode function number and grab the payload
-    unsigned fnum = decodeFuncNum(addr, numBytes);
+    const unsigned fnum = decodeFuncNum(addr, numBytes);
     uint64_t data = 0;
     uint8_t* p = (uint8_t*) ( &data );
     for( unsigned i = 0; i < numBytes; i++ )
@@ -151,6 +152,7 @@ void TCLPIM::FuncState::writeFSM(uint64_t d)
     case FSTATE::DONE:
     case FSTATE::INVALID:
       if (static_cast<FUNC_CMD>(d) == FUNC_CMD::INIT) {
+        parent->output->verbose(CALL_INFO, 3, 0, "Initializing Function[%u]\n",fnum);
         fstate = FSTATE::INITIALIZING;
         counter = 0;
       } else  { 
@@ -168,7 +170,7 @@ void TCLPIM::FuncState::writeFSM(uint64_t d)
         counter = 0;
         parent->output->verbose(
           CALL_INFO, 3, 0, 
-          "Starting Function[%d]( 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 "0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " )\n",
+          "Starting Function[%d]( 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " )\n",
           fnum, 
           params[0], params[1], params[2], params[3],
           params[4], params[5], params[6], params[7]
