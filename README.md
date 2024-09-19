@@ -24,7 +24,7 @@ make install
 ctest
 ```
 
-## Application Examples
+## REV Application Examples
 
 ```
 cd test/pim
@@ -51,6 +51,19 @@ The finite state machines (FSMs) are in sstcomp/PIMBackend:
 - tclpim_functions.*: built-in functions
 - userpim_functions.*: user provided functions
 
+## Appx (Application Driver) Examples
+
+The application driver replaces the REV CPU with application code compiled on that host and loaded as a Miranda subcomponent.
+This provides an efficient methods to test the PIM independently of the REV CPU. 
+
+```
+cd test/pim
+export APPX=1
+make clean
+make
+cat appx-output/AppxTest/run.log
+```
+
 # TODO
 
 ## Linker Script
@@ -67,6 +80,9 @@ The finite state machines (FSMs) are in sstcomp/PIMBackend:
 
 ## SST Configuration
 - Control regions for Cachability. Currently all REV accesses are non-cachable. Good for latency but it does not represent real-world hardware.
+
+## Application Driver
+- Add cacheable regions to the L1$ interface and remove FORCE_NONCACHEABLE_REQS from mkinc/appx.mk
 
 ## Code Quality
 - There are a number of compiler warnings in SST includes. Consider bringing these in locally and fixing the warnings ( posibbly followed by SST PRs )

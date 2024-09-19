@@ -69,6 +69,7 @@ void TestPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload 
   if( info.pimAccType == PIM_ACCESS_TYPE::SRAM ) {
     unsigned spdIndex = ( addr & 0x38ULL ) >> 3;
     unsigned byte     = ( addr & 0x7 );
+    assert(byte==0); // TODO should we allow unaligned accesses?
     assert( ( byte + numBytes ) <= 8 );  // 8 byte aligned only
     uint8_t* p = (uint8_t*) ( &( spdArray[spdIndex] ) );
     for( unsigned i = 0; i < numBytes; i++ ) {
