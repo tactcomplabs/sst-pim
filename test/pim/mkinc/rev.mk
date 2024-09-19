@@ -25,7 +25,7 @@ SSTOPTS += --add-lib-path=$(REVLIBPATH)
 OUTDIR = rev-output
 
 # Test Selection
-PIM_TESTS += $(notdir $(basename $(wildcard $(SRCDIR)/*.cpp)))
+PIM_TESTS += $(notdir $(basename $(wildcard $(SRCDIR)/*.cc)))
 
 # PIM MPI tests
 # PIM_MPI_TESTS += 
@@ -39,7 +39,7 @@ endif
 TLIST ?= $(ALL_TESTS)
 
 # REV Executables
-SRCS   := $(basename $(notdir $(wildcard $(SRCDIR)/*.cpp)))
+SRCS   := $(basename $(notdir $(wildcard $(SRCDIR)/*.cc)))
 EXES   := $(addprefix $(OUTDIR)/bin/,$(addsuffix .exe,$(SRCS)))
 DIASMS := $(patsubst %.exe,%.dis,$(EXES))
 SECTIONS := $(patsubst %.exe,%.sections,$(EXES))
@@ -124,20 +124,15 @@ ifndef NO_LINK
 $(OUTDIR)/bin/%.exe: $(OUTDIR)/bin/%.o $(SRCDIR)/pim.lds
 	$(LD) -o $@ -T $(SRCDIR)/pim.lds $<
 
-$(OUTDIR)/bin/%.o: $(SRCDIR)/%.cpp
+$(OUTDIR)/bin/%.o: $(SRCDIR)/%.cc
 	@mkdir -p $(@D)
 	$(CC) $(FLAGS) -o $@ -g -c $< -march=$(ARCH) $(ABI) $(INCLUDE) $(LIBS)
 else
-$(OUTDIR)/bin/%.exe: $(SRCDIR)/%.cpp
+$(OUTDIR)/bin/%.exe: $(SRCDIR)/%.cc
 	@mkdir -p $(@D)
 	$(CC) $(FLAGS) -g -march=$(ARCH) $(ABI) $(INCLUDE) -o $@ $<
 endif
 
-# workaround for rev_openat on ubuntu
-.PHONY: %.dat
-%.dat:
-	mkdir $(@D)
-	touch $@
 
 clean:
 	rm -rf $(OUTDIR)
@@ -154,6 +149,6 @@ help:
 
 .SECONDARY:
 
-.PRECIOUS: %.log
+.PRECIOUS: %.log %.revlog
 
 #-- EOF

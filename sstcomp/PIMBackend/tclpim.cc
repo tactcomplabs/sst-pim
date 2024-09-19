@@ -13,7 +13,7 @@ namespace SST::PIM {
 
 TCLPIM::TCLPIM( uint64_t node, SST::Output* o ) : PIM( o ) {
   // simulator defined identifier
-  id          = ( uint64_t( PIM_TYPE_TEST ) << 56 ) | ( node << 12 );
+  id          = ( uint64_t( PIM_TYPE_TCL ) << 56 ) | ( node << 12 );
   spdArray[0] = id;
   output->verbose( CALL_INFO, 1, 0, "Creating TCLPIM node=%" PRId64 " id=0x%" PRIx64 "\n", node, id );
   // mmio decoder

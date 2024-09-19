@@ -148,8 +148,8 @@ bool PIMBackend::clock( Cycle_t cycle ) {
 
   if( pimsim && !initDRAMDone ) {
     initDRAMDone                 = true;
-    this->output->verbose(CALL_INFO, 3, 0, "Running initial scratch pad test\n");
-    // Write test data to scratch pad base + 64
+    this->output->verbose(CALL_INFO, 3, 0, "Running initial PIM memory test\n");
+    // Write test data to SRAM base + 64
     MemEventBase::dataVec wrData = { 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe };
     MemEvent*             evw    = new MemEvent( getName(), spdBase + 64, spdBase + 64, PIM_WRITE, wrData );
     evw->setFlags( MemEvent::F_NONCACHEABLE | MemEvent::F_NORESPONSE );
