@@ -1,5 +1,5 @@
 /*
- * userfunc.cpp
+ * userfunc5.cpp
  *
  * Copyright (C) 2017-2024 Tactical Computing Laboratories, LLC
  * All Rights Reserved
@@ -92,7 +92,7 @@ size_t check() {
 }
 
 int main( int argc, char** argv ) {
-  printf("Starting appTest2\n");
+  printf("Starting userfunc5\n");
   size_t time_config, time_exec, time_check;
 
   printf("\ndram_dst=0x%lx\ndram_src=0x%lx\nscalar=0x%lx\nxfr_size=%d\n",
@@ -108,6 +108,6 @@ int main( int argc, char** argv ) {
 
   printf("Results:\n");
   printf("cycles: config=%d, exec=%d, check=%d\n", time_config, time_exec, time_check);
-  printf("appTest2 completed normally\n");
+  printf("userfunc5 completed normally\n");
   return 0;
 }
