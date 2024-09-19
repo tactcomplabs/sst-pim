@@ -30,8 +30,8 @@ ctest
 cd test/pim
 make clean
 make
-cat rev-output/rev-test-src/appTest2/run.revlog
-cat rev-output/rev-test-src/userfunc/run.revlog
+cat rev-output/appTest2/run.revlog
+cat rev-output/userfunc/run.revlog
 ls rev-test-src
 ```
 
