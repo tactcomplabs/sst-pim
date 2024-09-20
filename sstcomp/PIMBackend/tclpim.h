@@ -22,6 +22,7 @@ public:
   bool     clock( SST::Cycle_t ) override;
   uint64_t getCycle() override;
   bool     isMMIO( uint64_t addr ) override;
+  const PIMDecodeInfo&  getDecodeInfo( uint64_t addr);
   // IO access functions
   void read( Addr, uint64_t numBytes, std::vector<uint8_t>& ) override;
   void write( Addr, uint64_t numBytes, std::vector<uint8_t>* ) override;
