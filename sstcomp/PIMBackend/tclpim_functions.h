@@ -25,6 +25,10 @@ private:
   uint64_t  word_counter = 0;
   uint64_t  src          = 0;
   uint64_t  dst          = 0;
+  bool sram_src          = false;
+  bool sram_dst          = false;
+  void sequence_dram_read(DMA_STATE nextState);
+  void sequence_dram_write(DMA_STATE nextState);
 };  //class MemCopy
 
 
