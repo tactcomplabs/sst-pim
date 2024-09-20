@@ -9,7 +9,7 @@
 #
 
 # PIM Type (0:none, 1:test, 2:reserved, 3:tclpim)
-export PIM_TYPE=3
+PIM_TYPE?=3
 
 # REV paths
 REVLIBPATH ?= $(PIM_REV_HOME)/build/src
@@ -84,7 +84,7 @@ WFLAGS    += -Wno-unused-function -Wno-unused-parameter
 #WFLAGS    += -Werror
 # DEBUG_FLAGS := -DDEBUG_MODE
 FLAGS     := $(CCOPT) $(WFLAGS) $(DEBUG_FLAGS) -static -lm -fpermissive
-ARCH      := rv64gc
+ARCH      := rv64g
 # ABI       := -mabi=lp64d
 
 # Test Specific Customization
@@ -101,7 +101,7 @@ ARCH      := rv64gc
 	@$(eval pdffile = $(basename $@).pdf)
 	@rm -f $(statf) $(dotfile) $(pdffile)
 	@echo Running $(basename $@)
-	$(OPTS) OUTPUT_DIRECTORY=$(@D) ARCH=$(ARCH) REV_EXE=$(exe) \
+	$(OPTS) PIM_TYPE=$(PIM_TYPE) OUTPUT_DIRECTORY=$(@D) ARCH=$(ARCH)_zicntr REV_EXE=$(exe) \
  $(MPIOPTS) $(SST) $(SSTOPTS) \
  --output-json=$(@D)/rank.json $(SSTCFG) \
   > $@ && (echo "pass" > $(statf); $(DOT2PDF))

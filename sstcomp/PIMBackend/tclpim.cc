@@ -76,7 +76,7 @@ void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload )
   if( info.pimAccType == PIM_ACCESS_TYPE::SRAM ) {
     unsigned spdIndex = ( addr & 0x38ULL ) >> 3;
     unsigned byte     = ( addr & 0x7 );
-    assert( ( byte + numBytes ) <= 8 );  // 8 byte aligned only
+    assert(spdIndex < sizeof(spdArray)/sizeof(uint64_t));
     uint8_t* p = (uint8_t*) ( &( spdArray[spdIndex] ) );
     for( unsigned i = 0; i < numBytes; i++ ) {
       payload[i] = p[byte + i];
@@ -100,19 +100,14 @@ void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload )
 
 void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload ) {
   
-  output->verbose(CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE A=0x%" PRIx64 "\n", id, addr);
+  output->verbose(CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE A=0x%" PRIx64 "BYTES=%" PRId64 "\n", id, addr, numBytes);
 
-  // TODO: Fix elf / linker to not load these
-  if (numBytes !=8 ) {
-    output->verbose(CALL_INFO, 3, 0, "Warning: Dropping MMIO write to function handler with numBytes=%" PRIx64 "\n", numBytes );
-    return;
-  }
+  // Eight 8-byte entries. Byte Addressable (memcpy -O0 does byte copy).
+  unsigned offset = ( addr & 0x38ULL ) >> 3;
+  unsigned byte   = ( addr & 0x7 );
   PIMDecodeInfo info = pimDecoder->decode( addr );
   if( info.pimAccType == PIM_ACCESS_TYPE::SRAM ) {
-    // Eight 8-byte entries. Byte Addressable (memcpy -O0 does byte copy).
-    unsigned offset = ( addr & 0x38ULL ) >> 3;
-    unsigned byte   = ( addr & 0x7 );
-    assert( ( byte + numBytes ) <= 8 );  // 8 byte aligned only
+    assert(offset<sizeof(spdArray)/sizeof(uint64_t));
     uint8_t* p = (uint8_t*) ( &( spdArray[offset] ) );
     for( unsigned i = 0; i < numBytes; i++ ) {
       p[byte + i] = payload->at( i );

@@ -70,9 +70,9 @@ bool MemCopy::clock() {
         dma_state = nextState;
       } else {
         sequence_dram_write(nextState);
+        dma_state = DMA_STATE::WAITING;
       }
       dst += bytes;
-      dma_state = DMA_STATE::WAITING;
       break;
     }
     case DMA_STATE::DONE:

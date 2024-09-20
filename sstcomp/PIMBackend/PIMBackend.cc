@@ -250,6 +250,11 @@ void PIMBackend::handleMMIOWriteCompletion( SST::Event* ev ) {
   MemEvent* mev = static_cast<MemEvent*>( ev );
   // write event payload to PIM
   buffer        = mev->getPayload();
+  // TODO: Fix elf / linker / loader to not write initial values to MMIO ranges to avoid side effects
+  if (mev->getSize() !=8 ) {
+    pimOutput.verbose(CALL_INFO, 3, 0, "Warning: Dropping MMIO write to function handler with numBytes=%" PRIx64 "\n", mev->getSize() );
+    return;
+  }
   pimsim->write( mev->getAddr(), mev->getSize(), &buffer );
   pimOutput.verbose(CALL_INFO,3,0,"MMIO write a=0x%" PRIx64 " d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
 }

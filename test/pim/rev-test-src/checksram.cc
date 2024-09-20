@@ -18,7 +18,7 @@
 
 // Select one and only one
 #define DO_LOOP 1
-//#define DO_PIM 1
+// #define DO_PIM 1
 
 // Globals
 const int xfr_size = 256;  // dma transfer size in dwords
@@ -74,9 +74,19 @@ size_t theApp() {
 size_t theApp() {
   size_t time1, time2;
   REV_TIME( time1 );
-  revpim::init(PIM::FUNC_NUM::U5, dram_dst, dram_src, scalar, xfr_size*sizeof(uint64_t));
-  revpim::run(PIM::FUNC_NUM::U5);
-  revpim::finish(PIM::FUNC_NUM::U5); // blocking polling loop :(
+  // TODO should be able to queue these functions up in the PIM and synchronize them using semaphore.
+  // For now, run 1, poll until it's done, run the next... 
+
+  // PIM DRAM to SRAM
+  revpim::init(PIM::FUNC_NUM::F1, sram, dram_src, xfr_size*sizeof(uint64_t));
+  revpim::run(PIM::FUNC_NUM::F1);
+  revpim::finish(PIM::FUNC_NUM::F1);
+
+  // PIM SRAM to DRAM
+  revpim::init(PIM::FUNC_NUM::F1, dram_dst, sram, xfr_size*sizeof(uint64_t));
+  revpim::run(PIM::FUNC_NUM::F1);
+  revpim::finish(PIM::FUNC_NUM::F1);
+
   REV_TIME( time2 );
   return time2 - time1;
 }
@@ -124,11 +134,11 @@ int main( int argc, char** argv ) {
   size_t time_id, time_config, time_exec, time_check;
 
 #if DO_LOOP
-  printf("\buffer=0x%lx\ndram_dst=0x%lx\ndram_src=0x%lx\nxfr_size=%d\n",
+  printf("\nbuffer=0x%lx\ndram_dst=0x%lx\ndram_src=0x%lx\nxfr_size=%d\n",
     reinterpret_cast<uint64_t>(buffer), reinterpret_cast<uint64_t>(dram_dst), reinterpret_cast<uint64_t>(dram_src), xfr_size
   );
 #else
-  printf("\sram=0x%lx\ndram_dst=0x%lx\ndram_src=0x%lx\nxfr_size=%d\n",
+  printf("\nsram=0x%lx\ndram_dst=0x%lx\ndram_src=0x%lx\nxfr_size=%d\n",
     reinterpret_cast<uint64_t>(sram), reinterpret_cast<uint64_t>(dram_dst), reinterpret_cast<uint64_t>(dram_src), xfr_size
   );
 #endif

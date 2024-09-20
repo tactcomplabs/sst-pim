@@ -75,6 +75,11 @@ timing_params = {
 # User configuration settings
 #
 
+
+# REV machine type
+ARCH = os.getenv("ARCH","rv64g_zicntr")
+
+# Application Driver Test
 APP = os.getenv("APP")
 if APP:
     print(f"APP={APP}")
@@ -85,6 +90,7 @@ if INTERLEAVE not in SUPPORTED_INTERLEAVING:
     sys.exit(f"INTERLEAVE must be one of: {SUPPORTED_INTERLEAVING}")
 print(f"INTERLEAVE={INTERLEAVE}")
 
+# Command line arguments for elf
 ARGS = os.getenv("ARGS","");
 
 FORCE_NONCACHEABLE_REQS = os.getenv("FORCE_NONCACHEABLE_REQS",0)
@@ -161,11 +167,11 @@ rev_params = {
     "clock" : timing_params['global_clock'],
                                                      # Adjust top of memory per stack
     "maxHeapSize" : (1024*1024*1024)>>4,             # Default is 1/4 mem size
-    "machine" : "[CORES:RV64GC]",                    # Core:Config
+    "machine" : f"[CORES:{ARCH}]",                   # Core:Config
     "memCost" : "[0:1:10]",                          # Memory loads required 1-10 cycles
     "program" : os.getenv("REV_EXE", "sanity.exe"),  # Target executable
     "enableMemH" : 1,                                # Enable memHierarchy support
-    #"trcStartCycle" : 1,                           # Begin cycle for tracing
+    #"trcStartCycle" : 1,                            # Begin cycle for tracing
     #"trcLimit" : 100,                               # End cycle for tracing
     "splash" : 0,                                    # Display the splash message
 }
