@@ -30,7 +30,7 @@ void PIMReq_t::setPayload( uint8_t* data, unsigned bytes ) {
 TestPIM::TestPIM( uint64_t node, SST::Output* o ) : PIM( o ) {
   // simulator defined identifier
   id          = ( uint64_t( PIM_TYPE_TEST ) << 56 ) | ( node << 12 );
-  spdArray[0] = id;
+  sramArray[0] = id;
   output->verbose( CALL_INFO, 1, 0, "Creating TestPim node=%" PRId64 " id=0x%" PRIx64 "\n", node, id );
   // proto DMA
   dma       = new SimpleDMA( this );
@@ -49,7 +49,7 @@ bool TestPIM::clock( SST::Cycle_t cycle ) {
   this->cycle = cycle;
   if( dma->active() ) {
     uint64_t done = dma->clock();
-    spdArray[0]   = done;
+    sramArray[0]   = done;
   }
   return false;  // do not disable clock
 }
@@ -71,12 +71,12 @@ void TestPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload 
     unsigned byte     = ( addr & 0x7 );
     assert(byte==0); // TODO should we allow unaligned accesses?
     assert( ( byte + numBytes ) <= 8 );  // 8 byte aligned only
-    uint8_t* p = (uint8_t*) ( &( spdArray[spdIndex] ) );
+    uint8_t* p = (uint8_t*) ( &( sramArray[spdIndex] ) );
     for( unsigned i = 0; i < numBytes; i++ ) {
       payload[i] = p[byte + i];
     }
     output->verbose(
-      CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[spdIndex]
+      CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, sramArray[spdIndex]
     );
   } else {
     assert( false );  // FUNC is write-only
@@ -91,12 +91,12 @@ void TestPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload
     unsigned offset = ( addr & 0x38ULL ) >> 3;
     unsigned byte   = ( addr & 0x7 );
     assert( ( byte + numBytes ) <= 8 );  // 8 byte aligned only
-    uint8_t* p = (uint8_t*) ( &( spdArray[offset] ) );
+    uint8_t* p = (uint8_t*) ( &( sramArray[offset] ) );
     for( unsigned i = 0; i < numBytes; i++ ) {
       p[byte + i] = payload->at( i );
     }
     output->verbose(
-      CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[offset]
+      CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, sramArray[offset]
     );
   } else if( info.pimAccType == PIM_ACCESS_TYPE::FUNC ) {
     // 4 entries, write-only, DWORD addressable

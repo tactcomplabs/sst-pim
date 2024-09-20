@@ -17,18 +17,18 @@
 #include "revpim.h"
 
 // Select one and only one
-#define DO_LOOP 1
-// #define DO_PIM 1
+// #define DO_LOOP 1
+#define DO_PIM 1
 
 // Globals
-const int xfr_size = 256;  // dma transfer size in dwords
+const int xfr_size = 128;  // dma transfer size in dwords
 uint64_t check_data[xfr_size];
 uint64_t buffer[xfr_size] = {0};
 
 // PIM Memories (non-cachable)
 uint64_t dram_dst[xfr_size] __attribute__((section(".pimdram")));
 uint64_t dram_src[xfr_size] __attribute__((section(".pimdram")));
-uint64_t sram[1024] __attribute__((section(".pimsram")));
+uint64_t sram[PIM::SRAM_SIZE] __attribute__((section(".pimsram")));
 
 size_t checkPIM() {
   size_t time1, time2;
@@ -131,6 +131,14 @@ size_t check() {
 
 int main( int argc, char** argv ) {
   printf("Starting checksram\n");
+  #ifdef DO_LOOP
+  printf("Using simple loop (no PIM)\n");
+  #elif DO_PIM
+  printf("Using PIM functions\n");
+  #else
+  assert(0);
+  #endif
+
   size_t time_id, time_config, time_exec, time_check;
 
 #if DO_LOOP
@@ -138,9 +146,12 @@ int main( int argc, char** argv ) {
     reinterpret_cast<uint64_t>(buffer), reinterpret_cast<uint64_t>(dram_dst), reinterpret_cast<uint64_t>(dram_src), xfr_size
   );
 #else
-  printf("\nsram=0x%lx\ndram_dst=0x%lx\ndram_src=0x%lx\nxfr_size=%d\n",
-    reinterpret_cast<uint64_t>(sram), reinterpret_cast<uint64_t>(dram_dst), reinterpret_cast<uint64_t>(dram_src), xfr_size
+  printf("\nsram=0x%lx\ndram_dst=0x%lx\ndram_src=0x%lx\nxfr_size=%d\nsram_size=%d\n",
+    reinterpret_cast<uint64_t>(sram), reinterpret_cast<uint64_t>(dram_dst), reinterpret_cast<uint64_t>(dram_src), xfr_size, PIM::SRAM_SIZE
   );
+  if ((8*xfr_size) > PIM::SRAM_SIZE) {
+    printf("xfr_size in bytes %d exceeds sram size %ld. Data will wrap.\n", 8*xfr_size, PIM::SRAM_SIZE);
+  }
 #endif
 
   printf("Checking PIM ID...\n");

@@ -25,7 +25,7 @@
 const int xfr_size = 256;  // dma transfer size in dwords
 uint64_t check_data[xfr_size];
 #if 1
-uint64_t sram[64] __attribute__((section(".pimsram")));
+uint64_t sram[PIM::SRAM_SIZE] __attribute__((section(".pimsram")));
 uint64_t dram_dst[xfr_size] __attribute__((section(".pimdram")));
 uint64_t dram_src[xfr_size] __attribute__((section(".pimdram")));
 #else
