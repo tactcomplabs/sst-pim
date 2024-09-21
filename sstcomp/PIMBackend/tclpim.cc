@@ -55,7 +55,7 @@ bool TCLPIM::isMMIO( uint64_t addr ) {
   return inf.isIO;
 }
 
-const PIMDecodeInfo& TCLPIM::getDecodeInfo(uint64_t addr)
+PIMDecodeInfo TCLPIM::getDecodeInfo(uint64_t addr)
 {
     assert(pimDecoder);
     return pimDecoder->decode(addr);

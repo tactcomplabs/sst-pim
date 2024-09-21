@@ -33,9 +33,9 @@ void MemCopy::start( uint64_t params[NUM_FUNC_PARAMS] ) {
   auto dst_inf = parent->getDecodeInfo(dst);
   auto src_inf = parent->getDecodeInfo(src);
   if ( dst_inf.isIO && (dst_inf.pimAccType != PIM_ACCESS_TYPE::SRAM ) )
-    parent->output->fatal(CALL_INFO, -1, 0, "Destination address must by SRAM or DRAM\n");
+    parent->output->fatal(CALL_INFO, -1, "Destination address must by SRAM or DRAM\n");
   if ( src_inf.isIO && (src_inf.pimAccType != PIM_ACCESS_TYPE::SRAM ) )
-    parent->output->fatal(CALL_INFO, -1, 0, "Source address must by SRAM or DRAM\n");
+    parent->output->fatal(CALL_INFO, -1, "Source address must by SRAM or DRAM\n");
 
   dst_is_sram = dst_inf.isIO && (dst_inf.pimAccType == PIM_ACCESS_TYPE::SRAM );
   src_is_sram = src_inf.isIO && (src_inf.pimAccType == PIM_ACCESS_TYPE::SRAM );

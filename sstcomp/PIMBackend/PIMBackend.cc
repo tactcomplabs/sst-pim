@@ -252,7 +252,7 @@ void PIMBackend::handleMMIOWriteCompletion( SST::Event* ev ) {
   buffer        = mev->getPayload();
   // TODO: Fix elf / linker / loader to not write initial values to MMIO ranges to avoid side effects
   if (mev->getSize() !=8 ) {
-    pimOutput.verbose(CALL_INFO, 3, 0, "Warning: Dropping MMIO write to function handler with numBytes=%" PRIx64 "\n", mev->getSize() );
+    pimOutput.verbose(CALL_INFO, 3, 0, "Warning: Dropping MMIO write to function handler with numBytes=%" PRIx32 "\n", mev->getSize() );
     return;
   }
   pimsim->write( mev->getAddr(), mev->getSize(), &buffer );

@@ -61,7 +61,7 @@ RVOBJDUMP=riscv64-unknown-elf-objdump
 OBJDUMP   = ${RVOBJDUMP} --source -l -dC -Mno-aliases
 
 # Rev headers
-INCLUDE  += -I$(PIM_REV_HOME)/common/syscalls
+INCLUDE  := -I$(PIM_REV_HOME)/common/syscalls
 INCLUDE  += -I$(PIM_REV_HOME)/test/include
 
 # PIM headers
