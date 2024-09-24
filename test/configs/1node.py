@@ -169,7 +169,7 @@ rev_params = {
     "clock" : timing_params['global_clock'],
                                                      # Adjust top of memory per stack
     "maxHeapSize" : (1024*1024*1024)>>4,             # Default is 1/4 mem size
-    "machine" : "[CORES:RV64GC]",                    # Core:Config
+    "machine" : "[CORES:RV64GCZicntr]",                    # Core:Config
     "memCost" : "[0:1:10]",                          # Memory loads required 1-10 cycles
     "program" : os.getenv("REV_EXE", "sanity.exe"),  # Target executable
     "enableMemH" : 1,                                # Enable memHierarchy support
