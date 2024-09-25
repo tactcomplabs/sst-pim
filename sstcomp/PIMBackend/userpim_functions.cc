@@ -278,11 +278,6 @@ bool SymmetricDistanceMatrix::clock() {
           row_p[i] = curr_row_buffer[i];
           col_p[i] = curr_col_buffer[i];
         }
-        // const uint64_t curr_col_mem_addr = rand_base_addr + (curr_col() * sizeof(uint64_t));
-        // const uint64_t curr_row_mem_addr = rand_base_addr + (curr_row() * sizeof(uint64_t));
-
-        // parent->output->verbose(CALL_INFO,3,0,"SymmetricDistanceMatrixHW calculating dist for r=%u c=%u addr_r=0x%llx addr_r=0x%llx rand_r=%llu rand_c=%llu \n",
-        //   curr_row(),curr_col(),curr_row_mem_addr, curr_col_mem_addr, row,col);
         
         // copied from software function
         const uint64_t xor_rand = row ^ col;
@@ -333,7 +328,7 @@ bool SymmetricDistanceMatrix::clock() {
     return false;
   }
   if(loop_state() == LOOP_STATE::CLEANUP) {
-    parent->output->verbose(CALL_INFO,3,0,"SymmetricDistanceMatrix Init\n");
+    parent->output->verbose(CALL_INFO,3,0,"SymmetricDistanceMatrix Cleanup\n");
 
     // dump buffer before exiting
     const bool buffer_empty = buffer_head() == 0;
