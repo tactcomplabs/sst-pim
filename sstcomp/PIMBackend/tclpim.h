@@ -55,7 +55,7 @@ private:
 
   // memory mapped IO
   std::vector<std::shared_ptr<PIMMemSegment>> PIMSegs;
-  uint64_t             spdArray[8] = { 0 };
+  std::vector<uint8_t> spdArray = std::vector<uint8_t>(PIMDecoder::getSramSize());
   std::deque<uint64_t> ctl_ops;
   void                 function_write( uint64_t data );
   uint64_t             decodeFuncNum( uint64_t address, unsigned numBytes );

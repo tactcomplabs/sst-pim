@@ -14,7 +14,11 @@ namespace SST::PIM {
 TCLPIM::TCLPIM( uint64_t node, SST::Output* o ) : PIM( o ) {
   // simulator defined identifier
   id          = ( uint64_t( PIM_TYPE_TEST ) << 56 ) | ( node << 12 );
-  spdArray[0] = id;
+  const uint8_t * p = (uint8_t*)&id;
+  for(unsigned i = 0; i < sizeof(uint64_t); i++){
+    spdArray[i] = p[i];
+  } 
+
   output->verbose( CALL_INFO, 1, 0, "Creating TCLPIM node=%" PRId64 " id=0x%" PRIx64 "\n", node, id );
   // mmio decoder
   pimDecoder = new PIMDecoder( node );
@@ -25,6 +29,7 @@ TCLPIM::TCLPIM( uint64_t node, SST::Output* o ) : PIM( o ) {
   // User function 5: MulVectByScalar
   funcState[FUNC_NUM::U5] = std::make_unique<FuncState>(this, FUNC_NUM::U5, std::make_unique<MulVecByScalar>(this));
   funcState[FUNC_NUM::U6] = std::make_unique<FuncState>(this, FUNC_NUM::U6, std::make_unique<LFSR>(this));
+  funcState[FUNC_NUM::U7] = std::make_unique<FuncState>(this, FUNC_NUM::U7, std::make_unique<SymmetricDistanceMatrix>(this));
 
 }
 
@@ -69,15 +74,16 @@ uint64_t TCLPIM::decodeFuncNum(uint64_t a, unsigned numBytes)
 void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload ) {
   PIMDecodeInfo info = pimDecoder->decode( addr );
   if( info.pimAccType == PIM_ACCESS_TYPE::SRAM ) {
-    unsigned spdIndex = ( addr & 0x38ULL ) >> 3;
-    unsigned byte     = ( addr & 0x7 );
-    assert( ( byte + numBytes ) <= 8 );  // 8 byte aligned only
-    uint8_t* p = (uint8_t*) ( &( spdArray[spdIndex] ) );
+    unsigned sram_index = addr - PIMDecoder::getSramBaseAddr();
+    assert((addr & 0x7) == 0); // 8 byte aligned only
+    uint64_t data; // for debug only
+    uint8_t * p = (uint8_t*) &data;
     for( unsigned i = 0; i < numBytes; i++ ) {
-      payload[i] = p[byte + i];
+      payload[i] = spdArray[sram_index + i];
+      p[i] = spdArray[sram_index + i];
     }
     output->verbose(
-      CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[spdIndex]
+      CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO READ SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, data
     );
   } else {
     unsigned fnum = decodeFuncNum(addr, numBytes);
@@ -113,15 +119,16 @@ void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload 
   PIMDecodeInfo info = pimDecoder->decode( addr );
   if( info.pimAccType == PIM_ACCESS_TYPE::SRAM ) {
     // Eight 8-byte entries. Byte Addressable (memcpy -O0 does byte copy).
-    unsigned offset = ( addr & 0x38ULL ) >> 3;
-    unsigned byte   = ( addr & 0x7 );
-    assert( ( byte + numBytes ) <= 8 );  // 8 byte aligned only
-    uint8_t* p = (uint8_t*) ( &( spdArray[offset] ) );
+    unsigned sram_index = addr - PIMDecoder::getSramBaseAddr();
+    assert((addr & 0x7) == 0); // 8 byte aligned only
+    uint64_t data; // for debug only
+    uint8_t * p = (uint8_t*) &data;
     for( unsigned i = 0; i < numBytes; i++ ) {
-      p[byte + i] = payload->at( i );
+      spdArray[sram_index + i] = payload->at(i);
+      p[i] = payload->at(i);
     }
     output->verbose(
-      CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, spdArray[offset]
+      CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE SRAM A=0x%" PRIx64 " D=0x%" PRIx64 "\n", id, addr, data
     );
   } else if( info.pimAccType == PIM_ACCESS_TYPE::FUNC ) {
     // Decode function number and grab the payload

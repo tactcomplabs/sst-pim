@@ -87,7 +87,7 @@ private:
 
   // memory mapped IO
   std::vector<std::shared_ptr<PIMMemSegment>> PIMSegs;
-  uint64_t                                   spdArray[8] = { 0 };
+  std::vector<uint8_t>                       spdArray = std::vector<uint8_t>(PIMDecoder::getSramSize());
   uint64_t                                   ctl_buf     = 0;
   uint64_t                                   ctl_event   = 0;
   std::deque<uint64_t>                       ctl_ops;
