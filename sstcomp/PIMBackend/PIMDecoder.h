@@ -93,22 +93,29 @@ public:
   PIMDecoder( uint64_t node = 0 );
   static PIMDecodeInfo decode( const uint64_t& addr );
 
-  static void setPIMSegments(
-    const unsigned funcBaseAddr,
-    const unsigned sramBaseAddr,
-    const unsigned dramBaseAddr,
-    const unsigned regBoundAddr);
+  static inline uint64_t getFuncBaseAddr() { return PIMDecoder::_funcBaseAddr; };
+  static inline uint64_t getSramBaseAddr() { return PIMDecoder::_sramBaseAddr; };
+  static inline uint64_t getDramBaseAddr() { return PIMDecoder::_dramBaseAddr; };
+  static inline uint64_t getRegBoundAddr() { return PIMDecoder::_regBoundAddr; };
+  static inline size_t getSramSize() { return getDramBaseAddr() - getSramBaseAddr(); };
+  static inline size_t getDramSize() { return getRegBoundAddr() - getDramBaseAddr(); };
 
-  static inline unsigned _funcBaseAddr;
-  static inline unsigned _sramBaseAddr;
-  static inline unsigned _dramBaseAddr;
-  static inline unsigned _regBoundAddr;
-  static inline bool _allSegmentsInit = false;
+  static void setPIMSegments(
+    const uint64_t funcBaseAddr,
+    const uint64_t sramBaseAddr,
+    const uint64_t dramBaseAddr,
+    const uint64_t regBoundAddr);
 
 private:
   std::vector<std::shared_ptr<PIMMemSegment>> PIMSegs;
   uint64_t                                    node;
   uint64_t                                    nodeOffset;
+
+  static inline uint64_t _funcBaseAddr;
+  static inline uint64_t _sramBaseAddr;
+  static inline uint64_t _dramBaseAddr;
+  static inline uint64_t _regBoundAddr;
+  static inline bool _allSegmentsInit = false;
 };  // class PIMDecoder
 
 }  // namespace SST::PIM

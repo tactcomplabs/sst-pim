@@ -49,10 +49,10 @@ PIMDecodeInfo PIMDecoder::decode( const uint64_t& addr ) {
   return info;
 }
 
-void PIMDecoder::setPIMSegments(  const unsigned funcBaseAddr,
-                                  const unsigned sramBaseAddr,
-                                  const unsigned dramBaseAddr,
-                                  const unsigned regBoundAddr) {
+void PIMDecoder::setPIMSegments(  const uint64_t funcBaseAddr,
+                                  const uint64_t sramBaseAddr,
+                                  const uint64_t dramBaseAddr,
+                                  const uint64_t regBoundAddr) {
     assert(!_allSegmentsInit);
     assert((funcBaseAddr & 0x7) == 0);
     assert((sramBaseAddr & 0x7) == 0);
