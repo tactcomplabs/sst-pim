@@ -103,8 +103,8 @@ ARCH      := rv64gc
 	@echo Running $(basename $@)
 	$(OPTS) OUTPUT_DIRECTORY=$(@D) ARCH=$(ARCH) REV_EXE=$(exe) \
  $(MPIOPTS) $(SST) $(SSTOPTS) \
- --output-json=$(@D)/rank.json $(SSTCFG) \
-  > $@ && (echo "pass" > $(statf); $(DOT2PDF))
+ --output-json=$(@D)/rank.json $(SSTCFG) 2>&1 \
+  | tee $@ && (echo "pass" > $(statf); $(DOT2PDF))
 
 # To run all even if they fail use this instead
 #  > $@ && (echo "pass" > $(statf); $(DOT2PDF)) || echo "fail" > $(statf)
