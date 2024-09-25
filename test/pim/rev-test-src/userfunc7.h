@@ -1,3 +1,4 @@
+
 const unsigned RANDOM_ARRAY_LEN = 512;
 const unsigned long long RANDOM_ARRAY[RANDOM_ARRAY_LEN] = {
     0x3d2b80f30fb7b372,
