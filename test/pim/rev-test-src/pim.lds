@@ -6,9 +6,9 @@ SECTIONS
   .func_base : { *(.func_base) }
   . = 0xe000100;
   .pimsram : { *(.pimsram) }
-  . = 0xe000500;
+  . = 0xe001100;
   .pimdram : { *(.pimdram) }
-  . = 0xe400500;
+  . = 0xe400500; 
   .data : { *(.data) }
   .text : { *(.text) }
 }

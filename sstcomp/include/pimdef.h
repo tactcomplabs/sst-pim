@@ -22,10 +22,10 @@ namespace SST::PIM
     const uint64_t DEFAULT_SRAM_BASE_ADDR = 0x0E000100llu;
     
     // Default DRAM base address
-    const uint64_t DEFAULT_DRAM_BASE_ADDR = 0x0E000500llu;
+    const uint64_t DEFAULT_DRAM_BASE_ADDR = 0x0E001100llu;
     
     // Default PIM region upper bound (exclusive)
-    const uint64_t DEFAULT_REG_BOUND_ADDR = 0x0E400500llu;
+    const uint64_t DEFAULT_REG_BOUND_ADDR = 0x0E401100llu;
 
     // SRAM Access
     enum class SRAM_CMD : int { NOP, READ, WRITE, DONE };
