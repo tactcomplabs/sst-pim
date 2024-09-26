@@ -76,7 +76,6 @@ public:
   void start( uint64_t params[NUM_FUNC_PARAMS] ) override;
   bool clock() override;
 private:
-  void flipFlop();
   enum class LOOP_STATE { IDLE, INIT_ROW, CYCLE, CLEANUP, DONE };
   enum class DMA_STATE { IDLE, WRITE, WAIT };
   SequentialLogic<DMA_STATE>  dma_state    = DMA_STATE::IDLE;
@@ -92,8 +91,6 @@ private:
   SequentialLogic<bool> col_loaded;
   SequentialLogic<uint64_t> buffer_head;
   SequentialLogic<uint64_t> matrix_head;
-  const uint64_t sram_base_addr = PIMDecoder::getSramBaseAddr();
-  const uint64_t sram_size = PIMDecoder::getDramBaseAddr() - PIMDecoder::getSramBaseAddr();
   MemEventBase::dataVec curr_row_buffer = {0,0,0,0,0,0,0,0};
   MemEventBase::dataVec curr_col_buffer = {0,0,0,0,0,0,0,0};
 };  //class SymmetricDistanceMatrix
