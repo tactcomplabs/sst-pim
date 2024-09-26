@@ -16,7 +16,7 @@
 // PIM definitions
 #include "revpim.h"
 
-#include "userfunc7.h"
+#include "userfunc8.h"
 
 // Select one and only one
 #define DO_LOOP 1
@@ -28,68 +28,106 @@
 #define N_VERTICES CACHE_L1_SIZE / (CACHE_L1_ASSOCIATIVITY * sizeof(uint64_t))
 
 // Globals
-const unsigned vertices = N_VERTICES;
-const uint64_t dist_mask = 0xFul;
-// adj + open_set + came_from + g_score + rand_src
-const size_t total_dram_size = ((vertices * vertices) + ( 4 * vertices)) * sizeof(uint64_t);
+const unsigned vertices = 4;
+const uint64_t src = 0;
+const uint64_t target = 3;
+const uint64_t * const test_data = two_path_4;
+uint64_t check_data[vertices*vertices];
+
+// distance_matrix, + came_from
+const size_t total_dram_size = ((vertices * vertices) + vertices) * sizeof(uint64_t);
 static_assert(total_dram_size <= (SST::PIM::DEFAULT_REG_BOUND_ADDR - SST::PIM::DEFAULT_DRAM_BASE_ADDR));
-volatile uint64_t check_data[vertices*vertices];
 volatile uint8_t pim_dram[total_dram_size] __attribute__((section(".pimdram")));
+
 volatile uint64_t * const distance_matrix = (uint64_t *) &pim_dram;
-volatile uint64_t * const open_set    = distance_matrix + (vertices * vertices);
-volatile uint64_t * const came_from   = open_set + vertices;
-volatile uint64_t * const g_score     = came_from + vertices;
-volatile uint64_t * const rand_src    = (uint64_t *)(g_score + vertices);
-static_assert(vertices<=RANDOM_ARRAY_LEN);
+volatile uint64_t * const came_from       = distance_matrix + (vertices*vertices);
 
-
-uint32_t clz(uint32_t src){
-  uint32_t mask = INT32_MIN;
-  unsigned zeroes = 0;
-  while((src & (mask >> zeroes)) == 0 && zeroes != 32) ++zeroes;
-  return zeroes;
+/**
+ * admissable and consistent heuristic function
+ */
+uint64_t h(const uint64_t src, const uint64_t target) {
+  return 0;
 }
 
 /**
- * Creates a symmetric distance matrix.
- * 
- * @param out       output array
- * @param rand_src  random source array (must have length n)
- * @param dist_mask randomized distances are masked by this value before being added to the matrix.
- * @param n         number of vertices 
+ * returns the index with the lowest f_score in openSet
  */
-void symmetricDistanceMatrix(uint64_t * const out, const uint64_t * const rand_src, const uint64_t dist_mask, const uint64_t n){
-  assert(dist_mask <= UINT32_MAX);
-  assert(n > 0);
-
-  const uint32_t prob_mask = (1 << (32-clz(n >> 2)))-1;
-
-  for (uint64_t r = 0; r<n; r++){
-    out[(r*n)+r] = 0;
-
-    for(uint64_t c = r+1; c<n; c++){
-      const uint64_t xor_rand = rand_src[r] ^ rand_src[c];
-      const uint32_t xor_rand_msb = xor_rand >> 32;
-      const uint32_t xor_rand_lsb = xor_rand & UINT32_MAX;
-
-      const bool doEdge = (xor_rand_msb & prob_mask) == prob_mask;
-      const uint32_t dist = xor_rand_lsb & dist_mask;
-      // if(doEdge)
-      //   printf("writing to edge=%u dist=%u xor_rand_lsb=0x%lx dist_mask=0x%lx\n", (r*n) + c, doEdge ? dist : UINT64_MAX,xor_rand_lsb,dist_mask);
-      out[(r*n) + c] = doEdge ? dist : UINT64_MAX;
-      out[(c*n) + r] = doEdge ? dist : UINT64_MAX;
+uint64_t openSetTop(const uint64_t * const openSet, const uint64_t * const f_score, const unsigned vertices) {
+  int lowestFScore = UINT64_MAX;
+  int lowestFScoreIdx = UINT64_MAX;
+  for(int i = 0; i < vertices; i++){
+    if(openSet[i] == 1 && (f_score[i] < lowestFScore)){
+      lowestFScore = f_score[i];
+      lowestFScoreIdx = i;
     }
   }
+  return lowestFScoreIdx;
+}
+
+/**
+ * calculates the shortest path between two vertices in a given graph
+ * 
+ * @param came_from output array of length `vertices`
+ * @param dist symmetrical distance matrix of length `vertices * vertices`
+ * @param src vertex to find path from
+ * @param target vertex to find path to
+ * @param vertices number of vertices in graph
+ * @returns 0 path found, else 1
+ */
+unsigned aStar(uint64_t * const came_from, const uint64_t * const dist, const unsigned src, const unsigned target, const unsigned _vertices) {
+  volatile uint64_t g_score[vertices];
+  volatile uint64_t f_score[vertices];
+  volatile uint64_t open_set[vertices];
+
+  for(int i = 0; i < vertices; i++){
+    g_score[i] = UINT64_MAX;
+    f_score[i] = UINT64_MAX;
+    open_set[i] = 0;
+  }
+
+  open_set[src] = 1;
+  g_score[src] = 0;
+  f_score[src] = h(src,target);
+  
+  unsigned curr;
+  while((curr = openSetTop(open_set, f_score, vertices)) != UINT64_MAX) {
+    open_set[curr] = 0;
+  
+    #ifdef DEBUG
+    printf("curr=%d\n",curr);
+    #endif
+
+    if (curr == target) { return 0; }
+
+    for(unsigned neighbor = 0; neighbor < _vertices; neighbor++){
+      if(curr == neighbor) continue;
+      if(dist[(_vertices*curr)+neighbor] == UINT64_MAX) continue;
+
+      const uint64_t tentative_g_score = g_score[curr] + dist[(_vertices*curr)+neighbor];
+      if (tentative_g_score >= g_score[neighbor]) continue;
+
+      #ifdef DEBUG
+      printf("neighbor=%d dist[%d]=%d g_score=%d tentative_g_score=%d\n", 
+      neighbor, (nVertices*curr)+neighbor, dist[(nVertices*curr)+neighbor], g_score[neighbor], tentative_g_score);
+      #endif
+
+      came_from[neighbor] = curr;
+      g_score[neighbor]   = tentative_g_score;
+      f_score[neighbor]   = tentative_g_score + h(neighbor,target);
+      open_set[neighbor]  = 1;
+    }
+  }
+
+  return 1;
 }
 
 int configure() {
   size_t time1, time2;
   REV_TIME( time1 );
-  // Generate check data
-  for(unsigned i = 0; i<vertices; i++){
-    rand_src[i] = RANDOM_ARRAY[i];
+  for(unsigned i = 0; i<(vertices*vertices); i++){
+    distance_matrix[i] = test_data[i];
   }
-  symmetricDistanceMatrix((uint64_t*)check_data,(uint64_t*)rand_src,dist_mask,vertices);
+  aStar((uint64_t*)check_data,(uint64_t*)distance_matrix,0,3,vertices);
   REV_TIME( time2 );
   return time2 - time1; 
 }
@@ -98,40 +136,44 @@ int configure() {
 size_t theApp() {
   size_t time1, time2;
   REV_TIME( time1 );
-  symmetricDistanceMatrix((uint64_t*)distance_matrix,(uint64_t*)rand_src,dist_mask,vertices);
+  aStar((uint64_t*)came_from,(uint64_t*)distance_matrix,0,3,vertices);
   REV_TIME( time2 );
   return time2 - time1;
 }
 #endif
 
-// #if DO_PIM
-// size_t theApp() {
-//   size_t time1, time2;
-//   REV_TIME( time1 );
-//   revpim::init(PIM::FUNC_NUM::U6, dram_dst, dram_src0, dram_src1, xfr_size*sizeof(uint64_t));
-//   revpim::run(PIM::FUNC_NUM::U6);
-//   revpim::finish(PIM::FUNC_NUM::U6); // blocking polling loop :(
-//   REV_TIME( time2 );
-//   return time2 - time1;
-// }
-// #endif
-
-
-size_t check() {
+#if DO_PIM
+size_t theApp() {
   size_t time1, time2;
   REV_TIME( time1 );
-  for (unsigned i=0; i<(vertices*vertices); i++) {
-    if (check_data[i] != distance_matrix[i]) {
-      printf("Failed: check_data[%u]=%lu distance_matrix[%d]=%lu\n",
-              i, check_data[i], i,distance_matrix[i]);
+  revpim::init(PIM::FUNC_NUM::U8, (uint64_t)came_from, (uint64_t)distance_matrix, 0, 3, vertices);
+  revpim::run(PIM::FUNC_NUM::U8);
+  revpim::finish(PIM::FUNC_NUM::U8); // blocking polling loop :(
+  REV_TIME( time2 );
+  return time2 - time1;
+}
+#endif
+
+
+size_t check() { 
+  size_t time1, time2;
+  REV_TIME( time1 );
+  unsigned n = 0;
+  unsigned i = src;
+  while(n++ < vertices) { //TODO only path is guaranteed, untouched memory may b ediferent
+    if (check_data[i] != came_from[i]) {
+      printf("Failed: check_data[%u]=%llu came_from[%d]=%llu\n",
+              i, check_data[i], i,came_from[i]);
       assert(false);
     }
+
+    i = check_data[i];
   }
 
-  for (unsigned i=0;i<RANDOM_ARRAY_LEN;i++) {
-    if(RANDOM_ARRAY[i] != rand_src[i]) {
-      printf("Failed: RANDOM_ARRAY[%u]=%lu rand_src[%u]=%lu\n",
-              i, check_data[i], i,rand_src[i]);
+  for (unsigned i=0;i<(vertices*vertices);i++) {
+    if(test_data[i] != distance_matrix[i]) {
+      printf("Failed: test_data[%u]=%llu distance_matrix[%u]=%llu\n",
+              i, check_data[i], i,distance_matrix[i]);
       assert(false);
     }
   }
@@ -142,25 +184,26 @@ size_t check() {
 
 int main( int argc, char** argv ) {
   printf("Starting userfunc8\n");
-  // size_t time_config, time_exec, time_check;
+  size_t time_config, time_exec, time_check;
 
-  // printf("\ncheck_data=0x%lx\nrand_src=0x%lx\ndistance_matrix=0x%lx\ndist_mask=0x%lx\nvertices=%lu\n",
-  //   reinterpret_cast<uint64_t>(check_data), 
-  //   reinterpret_cast<uint64_t>(RANDOM_ARRAY), 
-  //   reinterpret_cast<uint64_t>(distance_matrix), 
-  //   reinterpret_cast<uint64_t>(dist_mask), 
-  //   vertices
-  // );
+  printf("\ncheck_data=0x%lx\ntest_data=0x%lx\ndistance_matrix=0x%lx\nsrc=%llu\ntarget=%llu\nvertices=%llu\n",
+    reinterpret_cast<uint64_t>(check_data), 
+    reinterpret_cast<uint64_t>(test_data), 
+    reinterpret_cast<uint64_t>(distance_matrix), 
+    src,
+    target,
+    vertices
+  );
 
-  // printf("Configuring...\n");
-  // time_config = configure();
-  // printf("Executing...\n");
+  printf("Configuring...\n");
+  time_config = configure();
+  printf("Executing...\n");
   // time_exec = theApp(); 
-  // printf("Checking...\n");
+  printf("Checking...\n");
   // time_check = check();
 
-  // printf("Results:\n");
-  // printf("cycles: config=%d, exec=%d, check=%d\n", time_config, time_exec, time_check);
+  printf("Results:\n");
+  printf("cycles: config=%d, exec=%d, check=%d\n", time_config, time_exec, time_check);
   printf("userfunc8 completed normally\n");
   return 0;
 }
