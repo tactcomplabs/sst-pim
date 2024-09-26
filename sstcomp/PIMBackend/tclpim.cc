@@ -107,7 +107,7 @@ void TCLPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload )
   }
 }
 
-void TCLPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload ) {
+void TCLPIM::write( Addr addr, uint64_t numBytes, const std::vector<uint8_t>* payload ) {
   
   output->verbose(CALL_INFO, 3, 0, "PIM 0x%" PRIx64 " IO WRITE A=0x%" PRIx64 "\n", id, addr);
 

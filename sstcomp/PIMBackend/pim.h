@@ -51,7 +51,7 @@ public:
   // IO access functions
   virtual bool isMMIO( uint64_t addr )                                 = 0;
   virtual void read( Addr, uint64_t numBytes, std::vector<uint8_t>& )  = 0;
-  virtual void write( Addr, uint64_t numBytes, std::vector<uint8_t>* ) = 0;
+  virtual void write( Addr, uint64_t numBytes, const std::vector<uint8_t>* ) = 0;
   // DRAM request callback (uint64_t a, MemEventBase::dataVec* d, unsigned bytes, bool isWrite, std::function<void(const uint64_t&)> completion)
   std::function<void( uint64_t, MemEventBase::dataVec*, bool, std::function<void( const MemEventBase::dataVec& )> )>
     m_issueDRAMRequest;
@@ -78,7 +78,7 @@ public:
   bool     isMMIO( uint64_t addr ) override;
   // IO access functions
   void read( Addr, uint64_t numBytes, std::vector<uint8_t>& ) override;
-  void write( Addr, uint64_t numBytes, std::vector<uint8_t>* ) override;
+  void write( Addr, uint64_t numBytes, const std::vector<uint8_t>* ) override;
 
 private:
   uint64_t   id;

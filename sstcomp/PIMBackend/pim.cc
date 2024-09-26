@@ -89,7 +89,7 @@ void TestPIM::read( Addr addr, uint64_t numBytes, std::vector<uint8_t>& payload 
   }
 }
 
-void TestPIM::write( Addr addr, uint64_t numBytes, std::vector<uint8_t>* payload ) {
+void TestPIM::write( Addr addr, uint64_t numBytes, const std::vector<uint8_t>* payload ) {
   // TODO eliminate extra decode
   PIMDecodeInfo info = pimDecoder->decode( addr );
   if( info.pimAccType == PIM_ACCESS_TYPE::SRAM ) {
