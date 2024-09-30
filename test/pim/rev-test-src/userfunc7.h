@@ -1,3 +1,12 @@
+/*
+ * userfunc7.h
+ *
+ * Copyright (C) 2017-2024 Tactical Computing Laboratories, LLC
+ * All Rights Reserved
+ * contact@tactcomplabs.com
+ *
+ * See LICENSE in the top level directory for licensing details
+ */
 
 const unsigned RANDOM_ARRAY_LEN = 512;
 const unsigned long long RANDOM_ARRAY[RANDOM_ARRAY_LEN] = {
