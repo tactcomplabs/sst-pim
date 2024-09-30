@@ -23,10 +23,10 @@
 #define DO_PIM 1
 
 // Globals
-const unsigned vertices = 4;
-const uint64_t src = 0;
-const uint64_t target = 3;
-const uint64_t * const test_data = two_path_4;
+const unsigned vertices = 512;
+const uint64_t src = 21;
+const uint64_t target = 509;
+const uint64_t * const test_data = large_matrix_512;
 uint64_t check_data[vertices*vertices];
 uint64_t check_ret_code;
 // total_dram_size = distance_matrix + came_from
@@ -164,7 +164,7 @@ size_t check() {
   }
 
   unsigned i = target;
-  while(i != UINT64_MAX) {
+  while(i != UINT32_MAX) {
     if (check_data[i] != came_from[i]) {
       printf("Failed: check_data[%u]=%llu came_from[%d]=%llu\n",
               i, check_data[i], i,came_from[i]);
