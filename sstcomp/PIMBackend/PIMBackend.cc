@@ -86,7 +86,7 @@ PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( i
   const unsigned sramBaseAddr = params.find<uint32_t>( "sram_base_addr", DEFAULT_SRAM_BASE_ADDR );
   const unsigned dramBaseAddr = params.find<uint32_t>( "dram_base_addr", DEFAULT_DRAM_BASE_ADDR );
   const unsigned regBoundAddr = params.find<uint32_t>( "reg_bound_addr", DEFAULT_REG_BOUND_ADDR );
-  pimOutput.verbose( CALL_INFO, 3, 0, " pim_func_base_addr=0x%" PRIx32 " pim_sram_base_addr=0x%" PRIx32 " pim_dram_base_addr=0x%" PRIx32 " pim_reg_bound_addr=0x%\n" PRIx32,
+  pimOutput.verbose( CALL_INFO, 3, 0, " pim_func_base_addr=0x%" PRIx32 " pim_sram_base_addr=0x%" PRIx32 " pim_dram_base_addr=0x%" PRIx32 " pim_reg_bound_addr=0x%" PRIx32 "\n",
     funcBaseAddr, sramBaseAddr, dramBaseAddr, regBoundAddr );
   PIMDecoder::setPIMSegments(funcBaseAddr,sramBaseAddr,dramBaseAddr,regBoundAddr);
 
