@@ -63,6 +63,7 @@ void finish(PIM::FUNC_NUM f) {
     assert(f_idx<PIM::FUNC_LEN);
     PIM::FSTATE state = static_cast<PIM::FSTATE>(func[f_idx]);
     if (state == PIM::FSTATE::INVALID) {
+        printf("function %u is in INVALID state\n",f_idx);
         assert(false);
     }
     int done = ( state == PIM::FSTATE::DONE);

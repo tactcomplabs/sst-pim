@@ -30,6 +30,7 @@ TCLPIM::TCLPIM( uint64_t node, SST::Output* o ) : PIM( o ) {
   funcState[FUNC_NUM::U5] = std::make_unique<FuncState>(this, FUNC_NUM::U5, std::make_unique<MulVecByScalar>(this));
   funcState[FUNC_NUM::U6] = std::make_unique<FuncState>(this, FUNC_NUM::U6, std::make_unique<LFSR>(this));
   funcState[FUNC_NUM::U7] = std::make_unique<FuncState>(this, FUNC_NUM::U7, std::make_unique<SymmetricDistanceMatrix>(this));
+  funcState[FUNC_NUM::U8] = std::make_unique<FuncState>(this, FUNC_NUM::U8, std::make_unique<AStar>(this));
 
 }
 

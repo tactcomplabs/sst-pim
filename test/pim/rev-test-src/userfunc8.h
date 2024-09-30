@@ -31,3 +31,11 @@ const uint64_t two_path_4[16] = {
     5         ,5         ,0         ,5,
     UINT64_MAX,UINT64_MAX,5         ,0
 };
+
+// 0 -> 3
+const uint64_t three_path_4[16] = {
+    0         ,10        ,5         ,0,
+    10        ,0         ,5         ,UINT64_MAX,
+    5         ,5         ,0         ,5,
+    0         ,UINT64_MAX,5         ,0
+};

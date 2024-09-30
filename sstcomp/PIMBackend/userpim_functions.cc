@@ -360,4 +360,285 @@ bool SymmetricDistanceMatrix::clock() {
     return true;
   }
 }
+
+AStar::AStar( TCLPIM* p) : FSM( p ) {
+  const uint64_t uint32_max = UINT32_MAX;
+  std::memcpy(uint32_max_vec.data(), &uint32_max, sizeof(uint32_max));
+};
+
+void AStar::start( uint64_t params [NUM_FUNC_PARAMS] ) {
+  this->ret_code_addr       = params[0];
+  this->came_from_base_addr = params[1];
+  this->matrix_base_addr    = params[2];
+  this->src                 = params[3];
+  this->target              = params[4];
+  this->vertices            = params[5];
+
+  // check address are in correct memory regions
+  assert(PIMDecoder::decode(ret_code_addr).pimAccType == PIM_ACCESS_TYPE::SRAM);
+  assert(PIMDecoder::decode(came_from_base_addr).isDRAM);
+  assert(PIMDecoder::decode(matrix_base_addr).isDRAM);
+
+  // preset state values and sequential logic
+  dma_state = DMA_STATE::IDLE;
+  loop_state = LOOP_STATE::INIT;
+  open_set_index = 0;
+  buffer_head = 0;
+  buffer_tail = 0;
+
+  // optimize buffer size if small graph
+  const unsigned graph_size = (vertices*vertices*sizeof(uint64_t));
+  const size_t buffer_size = graph_size >= 64 ? 64 : graph_size;
+  parent->buffer.resize(buffer_size);
+}
+
+bool AStar::clock() {
+  dma_state.clock();
+  loop_state.clock();
+  open_set_index.clock();
+  lowest_fscore.clock();
+  lowest_fscore_index.clock();
+  neighbor.clock();
+  buffer_head.clock();
+  buffer_tail.clock();
+  curr_fscore_loaded.clock();
+  curr_gscore_loaded.clock();
+  neighbor_gscore_loaded.clock();
+  path_found.clock();
+
+  if(loop_state() == LOOP_STATE::INIT) {
+    parent->output->verbose(CALL_INFO,3,0,"AStar Init\n");
+    
+    //write 0 to openset[i], infinity to fscore[i] except 0 to fscore[src]
+    const uint64_t write_addr = PIMDecoder::getSramBaseAddr() + (open_set_index() * sizeof(uint64_t));
+    const bool write_open_set_src = (open_set_index() == src) && (dma_state() == DMA_STATE::IDLE);
+    const bool write_open_set_nonsrc = (open_set_index() != src);
+    if(write_open_set_src) {
+      parent->write(write_addr,sizeof(uint64_t),&zero_vec);
+      MemEventBase::dataVec src_vec(sizeof(src));
+      std::memcpy(src_vec.data(),&src,sizeof(src));
+
+      // init came_from[src] = src
+      dma_state = DMA_STATE::BUSY;
+      const uint64_t src_came_from_addr = came_from_base_addr + (src * sizeof(uint64_t));
+      parent->m_issueDRAMRequest(src_came_from_addr,&src_vec,DMA_WRITE,[this]( const MemEventBase::dataVec& d ) {
+        parent->output->verbose(CALL_INFO,3,0,"came_from[src] = src returned\n");
+        dma_state = DMA_STATE::IDLE;
+      });
+      open_set_index = open_set_index() + 1;
+    }
+    if(write_open_set_nonsrc) {
+      parent->write(write_addr,sizeof(uint64_t),&uint32_max_vec);
+      open_set_index = open_set_index() + 1;
+    }
+
+    //exit after open_set is filled, skip POP_OPEN_SET, openset[src] already "popped"
+    const bool all_open_set_complete = (open_set_index() == vertices - 1) && (write_open_set_nonsrc || write_open_set_src);
+    if(all_open_set_complete){
+      loop_state = LOOP_STATE::CYCLE;
+      lowest_fscore_index = src;
+      curr_gscore_loaded = false;
+      neighbor_gscore_loaded = false;
+      neighbor = 0;
+    }
+  }
+  if(loop_state() == LOOP_STATE::POP_OPEN_SET){
+    parent->output->verbose(CALL_INFO,3,0,"AStar Pop Open Set\n");
+
+    // load openSet[i] and fScore[i]. reuse gscore buffers
+    const uint64_t open_set_index_addr = PIMDecoder::getSramBaseAddr() + (open_set_index() * sizeof(uint64_t));
+    if(!curr_fscore_loaded()){
+      parent->read(open_set_index_addr,sizeof(uint64_t),curr_fscore_buffer);
+      curr_fscore_loaded = true;
+    }
+
+    // check if vertex is in openst and if fscore less than lowest_fscore
+    bool found_lower_fscore;
+    if(curr_fscore_loaded()){
+      uint64_t curr_open_set_entry;
+      std::memcpy(&curr_open_set_entry,curr_fscore_buffer.data(),sizeof(curr_open_set_entry));
+      bool in_open_set = (curr_open_set_entry & INT64_MIN) != 0;
+      uint32_t curr_fscore = curr_open_set_entry & UINT32_MAX;
+      found_lower_fscore = in_open_set && (curr_fscore < lowest_fscore());
+      if(found_lower_fscore){
+        lowest_fscore = curr_fscore;
+        lowest_fscore_index = open_set_index();
+      }
+      
+      curr_fscore_loaded = false;
+      open_set_index = open_set_index() + 1;
+    }
+
+    // exit loop after all vertices in open set are checked
+    const bool all_open_set_checked = (open_set_index() == vertices - 1) && curr_fscore_loaded();
+    if(all_open_set_checked){
+      loop_state = LOOP_STATE::CYCLE;
+      curr_gscore_loaded = false;
+      neighbor_gscore_loaded = false;
+      neighbor = 0;
+    }
+
+    // pop open_set[i] if any found
+    const unsigned pop_open_set_index = found_lower_fscore ? open_set_index() : lowest_fscore_index();
+    const bool pop_open_set = all_open_set_checked && (pop_open_set_index != UINT32_MAX);
+    if(pop_open_set){
+      const uint64_t lowest_fscore_64 = lowest_fscore();
+      MemEventBase::dataVec lowest_fscore_vec = MemEventBase::dataVec(sizeof(lowest_fscore_64));
+      std::memcpy(lowest_fscore_vec.data(),&lowest_fscore_64,sizeof(lowest_fscore_64));
+      const uint64_t lowest_fscore_index_addr = PIMDecoder::getSramBaseAddr() + (pop_open_set_index * sizeof(uint64_t));
+      parent->write(lowest_fscore_index_addr,sizeof(uint64_t),&lowest_fscore_vec);
+    }
+   
+  }
+  if(loop_state() == LOOP_STATE::CYCLE) {
+    parent->output->verbose(CALL_INFO,3,0,"AStar Cycle lowestfscoreindex=%u target=%u\n",lowest_fscore_index(),target);
+    // return success if target is reached
+    const bool curr_is_target = lowest_fscore_index() == target;
+    if(curr_is_target) {
+      loop_state = LOOP_STATE::CLEANUP;
+      path_found = true;
+    }
+
+    // return fail if target is not reached
+    const bool open_set_is_empty = lowest_fscore_index() == UINT32_MAX;
+    if(open_set_is_empty) {
+      loop_state = LOOP_STATE::CLEANUP;
+      path_found = false;
+    }
+
+    // load neighbor into buffer if not loaded (sync load)
+    const unsigned neighbor_edge_index = (lowest_fscore_index() * vertices) + neighbor();
+    const bool neighbor_edge_loaded = (buffer_tail() <= neighbor_edge_index) && (neighbor_edge_index < buffer_head());
+    const bool roll_matrix_window = !neighbor_edge_loaded && dma_state() == DMA_STATE::IDLE;
+    if(roll_matrix_window) {
+      dma_state = DMA_STATE::BUSY;
+      const uint64_t neighbor_edge_addr = matrix_base_addr + (neighbor_edge_index * sizeof(uint64_t));
+      parent->m_issueDRAMRequest(
+        neighbor_edge_addr,
+        &parent->buffer,
+        DMA_READ,
+        [this](const MemEventBase::dataVec & d){
+          assert(parent->buffer.size() == d.size());
+          std::memcpy(parent->buffer.data(), d.data(), d.size());
+          const uint64_t * p = (uint64_t*)parent->buffer.data();
+          const uint64_t * p2 = (uint64_t*)d.data();
+          for(unsigned i = 0; i < 8; i++){
+            parent->output->verbose(CALL_INFO,3,0,"d[%u]=%llu buffer[%u]=%llu\n",i,p2[i],i,p[i]);
+          }
+          dma_state = DMA_STATE::IDLE;
+          const unsigned neighbor_edge_index = (lowest_fscore_index() * vertices) + neighbor();
+          buffer_head = neighbor_edge_index + (d.size() / sizeof(uint64_t));
+          buffer_tail = neighbor_edge_index;
+          parent->output->verbose(CALL_INFO,3,0,"buffer = rolling widnow returned\n");
+        }
+      );
+    }
+
+    // load g scores if neighbor has an edge
+    uint64_t neighbor_distance;
+    bool neighbor_has_edge;
+    if(neighbor_edge_loaded){
+      const uint64_t neighbor_buffer_index = neighbor_edge_index - buffer_tail();
+      std::memcpy(&neighbor_distance, ((uint64_t*)parent->buffer.data()) + neighbor_buffer_index,sizeof(uint64_t));
+      neighbor_has_edge = neighbor_distance < UINT64_MAX;
+      const bool load_curr_gscore = neighbor_has_edge && neighbor_edge_loaded && !curr_gscore_loaded();
+      if(load_curr_gscore){
+        const uint64_t curr_gscore_addr = PIMDecoder::getSramBaseAddr() + (lowest_fscore_index() * sizeof(uint64_t));
+        parent->read(curr_gscore_addr, sizeof(uint64_t), curr_gscore_buffer);
+        curr_gscore_loaded = true;
+      }
+    }
+
+    const uint64_t neighbor_gscore_addr = PIMDecoder::getSramBaseAddr() + (neighbor() * sizeof(uint64_t));
+    const bool load_neighbor_gscore = curr_gscore_loaded() && !neighbor_gscore_loaded() && neighbor_has_edge;
+    if(load_neighbor_gscore){
+      parent->read(neighbor_gscore_addr, sizeof(uint64_t), neighbor_gscore_buffer);
+      neighbor_gscore_loaded = true;
+    }
+
+    // compare g scores
+    uint64_t tentative_gscore; //treated as const, simulation optimization
+    bool shorter_path_found; //treated as const, simulation optimization
+    const bool compare_gscores = neighbor_has_edge && curr_gscore_loaded() && neighbor_gscore_loaded();
+    if(compare_gscores) {
+      uint64_t curr_gscore;
+      uint64_t neighbor_gscore;
+      std::memcpy(&curr_gscore,curr_gscore_buffer.data(),sizeof(curr_gscore));
+      std::memcpy(&neighbor_gscore,neighbor_gscore_buffer.data(),sizeof(neighbor_gscore));
+      tentative_gscore = (curr_gscore & UINT32_MAX) + neighbor_distance;
+      shorter_path_found = tentative_gscore < (neighbor_gscore & UINT32_MAX);
+      parent->output->verbose(CALL_INFO,3,0,"curr_gscore=%u dist=%u neighbor_gscore=%u shorter_path_found=%u\n",curr_gscore,neighbor_distance,(neighbor_gscore & UINT32_MAX),shorter_path_found);
+    }
+
+    const bool do_update = shorter_path_found && (dma_state() == DMA_STATE::IDLE);
+    if(do_update){
+      parent->output->verbose(CALL_INFO,3,0,"found shorter path between curr=%u and neighbor=%u tentative_gscore=%llu\n",lowest_fscore_index(),neighbor(),tentative_gscore);
+      //update came_from[neighbor]
+      const uint64_t neighbor_came_from_addr = came_from_base_addr + (neighbor() * sizeof(uint64_t));
+      const uint64_t curr = lowest_fscore_index();
+      MemEventBase::dataVec curr_vec(sizeof(curr));
+      std::memcpy(curr_vec.data(), &curr, sizeof(curr));
+      dma_state = DMA_STATE::BUSY;
+      parent->m_issueDRAMRequest(
+        neighbor_came_from_addr,
+        &curr_vec,
+        DMA_WRITE,
+        [this](const MemEventBase::dataVec & d){
+          dma_state = DMA_STATE::IDLE;
+      });
+
+      //update {open_set,gscore,fscore}[neighbor]
+      const uint64_t open_set_entry = tentative_gscore | INT64_MIN;
+      MemEventBase::dataVec open_set_entry_vec(sizeof(open_set_entry));
+      std::memcpy(open_set_entry_vec.data(),&open_set_entry,sizeof(open_set_entry));
+      parent->write(neighbor_gscore_addr, sizeof(open_set_entry), &open_set_entry_vec);
+    }
+
+    // setup for next neighbor if this one does not has an edge or has been updated
+    const bool neighbor_checked = (neighbor_edge_loaded && !neighbor_has_edge) || ((curr_gscore_loaded() && neighbor_gscore_loaded()) && (do_update || !shorter_path_found));
+    if(neighbor_checked){
+      parent->output->verbose(CALL_INFO,3,0,"do_next_neighbor\n");
+      neighbor = neighbor() + 1;
+      neighbor_gscore_loaded = false;
+    }
+    
+    // pop next vertex in open set if all neighbors evaluated
+    const bool all_neighbors_checked = (neighbor() == (vertices - 1)) && neighbor_checked;
+    if(all_neighbors_checked) {
+      loop_state = LOOP_STATE::POP_OPEN_SET;
+      lowest_fscore = UINT32_MAX;
+      lowest_fscore_index = UINT32_MAX;
+      curr_fscore_loaded = false;
+      open_set_index = 0;
+    }
+  }
+  if(loop_state() == LOOP_STATE::CLEANUP) {
+    parent->output->verbose(CALL_INFO,3,0,"AStar Cleanup\n");
+
+    const bool wait = dma_state() == DMA_STATE::BUSY;
+    if(!wait){
+      loop_state = LOOP_STATE::DONE;
+    }
+  }
+  if(loop_state() == LOOP_STATE::DONE) {
+    parent->output->verbose(CALL_INFO,3,0,"AStar Done\n");
+
+    // return 0 success, else 0
+    if(path_found()){
+      const uint64_t zero = 0;
+      MemEventBase::dataVec zero_vec = MemEventBase::dataVec(8);
+      std::memcpy(zero_vec.data(), &zero, sizeof(zero));
+      parent->write(ret_code_addr,sizeof(uint64_t),&zero_vec);
+    }else{
+      const uint64_t one = 1;
+      MemEventBase::dataVec one_vec = MemEventBase::dataVec(8);
+      std::memcpy(one_vec.data(), &one, sizeof(one));
+      parent->write(ret_code_addr,sizeof(uint64_t),&one_vec);
+    }
+
+    return true;
+  }
+  return false;
+}
+
 } // namespace

@@ -49,6 +49,7 @@ private:
 
 template<typename T>
 struct SequentialLogic {
+  char * name;
   T d;
   T q;
   bool driven = false;
@@ -62,7 +63,7 @@ struct SequentialLogic {
     driven = true;
   }
 
-  T operator()(){ return q; }
+  inline T operator()(){ return q; }
 
   void clock(){
     q = d;
@@ -94,6 +95,41 @@ private:
   MemEventBase::dataVec curr_row_buffer = {0,0,0,0,0,0,0,0};
   MemEventBase::dataVec curr_col_buffer = {0,0,0,0,0,0,0,0};
 };  //class SymmetricDistanceMatrix
+
+class AStar : public FSM {
+public:
+  AStar( TCLPIM* p);
+  void start (uint64_t params[NUM_FUNC_PARAMS] ) override;
+  bool clock() override;
+private:
+  enum class LOOP_STATE { IDLE, INIT, POP_OPEN_SET, CYCLE, CLEANUP, DONE };
+  enum class DMA_STATE { IDLE, BUSY };
+  const bool DMA_WRITE = true;
+  const bool DMA_READ = false;
+  SequentialLogic<DMA_STATE>  dma_state;
+  SequentialLogic<LOOP_STATE> loop_state;
+  uint64_t came_from_base_addr;
+  uint64_t matrix_base_addr;
+  uint64_t ret_code_addr;
+  uint64_t src;
+  uint64_t target;
+  unsigned vertices;
+  SequentialLogic<unsigned> open_set_index;
+  SequentialLogic<unsigned> lowest_fscore;
+  SequentialLogic<unsigned> lowest_fscore_index;
+  SequentialLogic<unsigned> neighbor;
+  SequentialLogic<unsigned> buffer_head;
+  SequentialLogic<unsigned> buffer_tail;
+  SequentialLogic<bool> curr_fscore_loaded;
+  SequentialLogic<bool> curr_gscore_loaded;
+  SequentialLogic<bool> neighbor_gscore_loaded;
+  SequentialLogic<bool> path_found;
+  MemEventBase::dataVec uint32_max_vec = MemEventBase::dataVec(8);
+  MemEventBase::dataVec zero_vec = MemEventBase::dataVec(8,0);
+  MemEventBase::dataVec curr_fscore_buffer = MemEventBase::dataVec(8);
+  MemEventBase::dataVec curr_gscore_buffer = MemEventBase::dataVec(8);
+  MemEventBase::dataVec neighbor_gscore_buffer = MemEventBase::dataVec(8);
+};
 
 } // namespace SST::PIM
 
