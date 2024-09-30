@@ -24,7 +24,7 @@ public:
   bool     isMMIO( uint64_t addr ) override;
   // IO access functions
   void read( Addr, uint64_t numBytes, std::vector<uint8_t>& ) override;
-  void write( Addr, uint64_t numBytes, const std::vector<uint8_t>* );
+  void write( Addr, uint64_t numBytes, const std::vector<uint8_t>* ) override;
 
   // Primary functional state machine
   class FuncState {
