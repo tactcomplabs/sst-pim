@@ -141,6 +141,7 @@ help:
 	@echo make compile
 	@echo make run
 	@echo make TLIST="test1 test2 ..."
+	@echo make DOT=1
 	@echo Valid TLIST selections are:
 	@echo $(ALL_TESTS)
 	@echo
