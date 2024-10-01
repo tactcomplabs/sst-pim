@@ -7,6 +7,8 @@
 #
 # See LICENSE in the top level directory for licensing details
 #
+# PIM Type (0:none, 1:test, 2:reserved, 3:tclpim)
+PIM_TYPE?=3
 
 # SST Libs
 SSTOPTS += --add-lib-path=$(PROJHOME)/sstcomp/AppGen
@@ -40,7 +42,7 @@ all: $(TARGS)
 run: $(LOGS)
 
 # Test Specific Customization
-$(OUTDIR)/AppxTest/run.log:             OPTS = APP=AppxTest PIM_TYPE=1
+$(OUTDIR)/AppxTest/run.log:             OPTS = APP=AppxTest
 
 # The magical run command
 .PHONY: %.log
@@ -52,10 +54,11 @@ $(OUTDIR)/AppxTest/run.log:             OPTS = APP=AppxTest PIM_TYPE=1
 	@$(eval pdffile = $(basename $@).pdf)
 	@rm -f $(statf) $(dotfile) $(pdffile)
 	@echo Running $(basename $@)
-	$(OPTS) OUTPUT_DIRECTORY=$(@D) \
+	$(OPTS) PIM_TYPE=$(PIM_TYPE) OUTPUT_DIRECTORY=$(@D) \
  $(MPIOPTS) $(SST) $(SSTOPTS) \
  --output-json=$(@D)/rank.json $(SSTCFG) \
- > $@ && (echo "pass" > $(statf); $(DOT2PDF))
+
+# > $@ && (echo "pass" > $(statf); $(DOT2PDF))
 
  # To run all even if they fail use this instead
  # > $@ && (echo "pass" > $(statf); $(DOT2PDF)) || echo "fail" > $(statf)
