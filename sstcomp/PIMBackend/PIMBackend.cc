@@ -88,8 +88,7 @@ PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( i
   node_id = params.find<unsigned>( "node_id", 0 );
 
   if( pim_type == PIM_TYPE_TEST ) {
-    pimsim = new TestPIM( node_id, &pimOutput );
-    pimOutput.verbose( CALL_INFO, 1, 0, "pim_type=%" PRIu32 " Node=%" PRIu32 " Using Test Mode\n", PIM_TYPE_TEST, node_id );
+    pimOutput.fatal(CALL_INFO,-1,"pim_type PIM_TYPE_TEST is deprecated. Used PIM_TYPE_TCL instead\n");
   } else if( pim_type == PIM_TYPE_TCL ) {
     pimsim = new TCLPIM( node_id, &pimOutput );
     pimOutput.verbose( CALL_INFO, 1, 0, "pim_type=%" PRIu32 " Node=%" PRIu32 " Using TCL PIM\n", PIM_TYPE_TCL, node_id );
