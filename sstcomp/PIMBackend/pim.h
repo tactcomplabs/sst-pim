@@ -31,6 +31,7 @@ struct PIMReq_t {
   unsigned              numBytes;
   MemEventBase::dataVec payload;
   void                  setPayload( uint8_t* data, unsigned bytes );
+  uint64_t              getPayload(std::vector<uint8_t> payload);
 
   friend std::ostream& operator<<( std::ostream& os, const PIMReq_t r ) {
     return os << hex << "id=0x" << r.id << " addr=0x" << r.addr << " isWrite=" << r.isWrite << " numBytes=" << r.numBytes << endl;

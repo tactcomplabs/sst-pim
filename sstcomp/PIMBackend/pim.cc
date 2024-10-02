@@ -25,14 +25,14 @@ void PIMReq_t::setPayload( uint8_t* data, unsigned bytes ) {
     payload.at( i ) = data[i];
 };
 
-// uint64_t PIMReq_t::getPayload(std::vector<uint8_t> payload)
-// {
-//     uint64_t data = 0;
-//     uint8_t* p = (uint8_t*) ( &data );
-//     for( unsigned i = 0; i < sizeof(uint64_t); i++ )
-//       p[i] = payload[i];
-//     return data;
-// }
+uint64_t PIMReq_t::getPayload(std::vector<uint8_t> payload)
+{
+    uint64_t data = 0;
+    uint8_t* p = (uint8_t*) ( &data );
+    for( unsigned i = 0; i < sizeof(uint64_t); i++ )
+      p[i] = payload[i];
+    return data;
+}
 
 } // namespace SST::PIM
 
