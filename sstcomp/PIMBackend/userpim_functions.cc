@@ -168,7 +168,7 @@ void SymmetricDistanceMatrix::start( uint64_t params [NUM_FUNC_PARAMS] ) {
 
   parent->output->verbose(
     CALL_INFO, 3, 0, 
-    "SymmetricDistanceMatrix: matrix_base_addr=0x%" PRIx64 " rand_base_addr=0x%" PRIx64 " dist_mask=0x%" PRIx64 " vertices=%" PRIu64 "\n", 
+    "SymmetricDistanceMatrix: matrix_base_addr=0x%" PRIx64 " rand_base_addr=0x%" PRIx64 " dist_mask=0x%" PRIx32 " vertices=%" PRIu32 "\n", 
     matrix_base_addr,rand_base_addr,dist_mask,vertices);
 }
 
@@ -220,7 +220,7 @@ bool SymmetricDistanceMatrix::clock() {
     return false;
   }
   if(loop_state() == LOOP_STATE::CYCLE) {
-    parent->output->verbose(CALL_INFO,3,0,"SymmetricDistanceMatrix Cycle row=%u col=%u\n",curr_row(),curr_col());
+    parent->output->verbose(CALL_INFO,3,0,"SymmetricDistanceMatrix Cycle row=%" PRIu32 " col=%" PRIu32 "\n",curr_row(),curr_col());
 
     // shift random values into sram if curr_col is out of bounds
     const bool load_col = !col_loaded();
@@ -268,7 +268,6 @@ bool SymmetricDistanceMatrix::clock() {
     }
     
     // empty buffer if full or row_complete
-    const bool buffer_empty = buffer_head() == 0;
     const bool dump_buffer = (buffer_full) && (dma_state() == DMA_STATE::IDLE);
     const unsigned value_bytes_in_buffer = do_calculation ? buffer_head() + sizeof(uint64_t) : buffer_head();
     buffer_head = dump_buffer ? 0 : value_bytes_in_buffer;

@@ -83,12 +83,12 @@ private:
   uint32_t   dist_mask;
   uint32_t   prob_mask;
   unsigned   vertices;
-  SequentialLogic<uint64_t> curr_row;
-  SequentialLogic<uint64_t> curr_col;
+  SequentialLogic<unsigned> curr_row;
+  SequentialLogic<unsigned> curr_col;
   SequentialLogic<bool> row_loaded;
   SequentialLogic<bool> col_loaded;
-  SequentialLogic<uint64_t> buffer_head;
-  SequentialLogic<uint64_t> matrix_head;
+  SequentialLogic<unsigned> buffer_head;
+  SequentialLogic<unsigned> matrix_head;
   MemEventBase::dataVec curr_row_buffer = MemEventBase::dataVec(8);
   MemEventBase::dataVec curr_col_buffer = MemEventBase::dataVec(8);
 };  //class SymmetricDistanceMatrix
