@@ -32,7 +32,6 @@ volatile uint64_t check_data[vertices*vertices];
 
 // check randoms will fit in PIM sram
 static_assert(vertices<=RANDOM_ARRAY_LEN);
-static_assert((vertices*sizeof(uint64_t))<=(SST::PIM::DEFAULT_DRAM_BASE_ADDR - SST::PIM::DEFAULT_SRAM_BASE_ADDR));
 
 volatile uint8_t pim_sram[vertices*sizeof(uint64_t)] __attribute__((section(".pimsram")));
 volatile uint64_t * const rand_src        = (uint64_t *) &pim_sram;

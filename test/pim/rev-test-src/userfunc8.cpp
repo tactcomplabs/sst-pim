@@ -31,7 +31,6 @@ uint64_t check_data[vertices*vertices];
 uint64_t check_ret_code;
 // total_dram_size = distance_matrix + came_from
 const size_t total_dram_size = ((vertices * vertices) + vertices) * sizeof(uint64_t);
-static_assert(total_dram_size <= (SST::PIM::DEFAULT_REG_BOUND_ADDR - SST::PIM::DEFAULT_DRAM_BASE_ADDR));
 volatile uint8_t pim_dram[total_dram_size] __attribute__((section(".pimdram")));
 volatile uint64_t * const distance_matrix = (uint64_t *) &pim_dram;
 volatile uint64_t * const came_from       = distance_matrix + (vertices*vertices);

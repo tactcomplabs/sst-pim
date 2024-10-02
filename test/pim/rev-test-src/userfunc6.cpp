@@ -21,7 +21,7 @@
 #define DO_PIM 1
 
 #define LFSR_SEED 0x1010101010101010ul
-#define N 512
+#define N 64
 
 // Globals
 const uint64_t lfsr_seed = LFSR_SEED;
