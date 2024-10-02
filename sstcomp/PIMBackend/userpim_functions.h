@@ -14,7 +14,6 @@ namespace SST::PIM {
 
 template<typename T>
 struct SequentialLogic {
-  char * name;
   T d;
   T q;
   bool driven = false;
@@ -127,6 +126,7 @@ private:
   MemEventBase::dataVec curr_fscore_buffer = MemEventBase::dataVec(8);
   MemEventBase::dataVec curr_gscore_buffer = MemEventBase::dataVec(8);
   MemEventBase::dataVec neighbor_gscore_buffer = MemEventBase::dataVec(8);
+  uint64_t cycle = 0;
 };
 
 } // namespace SST::PIM

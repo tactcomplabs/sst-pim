@@ -220,7 +220,7 @@ bool SymmetricDistanceMatrix::clock() {
     return false;
   }
   if(loop_state() == LOOP_STATE::CYCLE) {
-    parent->output->verbose(CALL_INFO,3,0,"SymmetricDistanceMatrix Cycle\n");
+    parent->output->verbose(CALL_INFO,3,0,"SymmetricDistanceMatrix Cycle row=%u col=%u\n",curr_row(),curr_col());
 
     // shift random values into sram if curr_col is out of bounds
     const bool load_col = !col_loaded();
@@ -326,6 +326,7 @@ bool SymmetricDistanceMatrix::clock() {
     loop_state = LOOP_STATE::IDLE;
     return true;
   }
+  return false;
 }
 
 AStar::AStar( TCLPIM* p) : FSM( p ) {
@@ -410,7 +411,7 @@ bool AStar::clock() {
     }
   }
   if(loop_state() == LOOP_STATE::POP_OPEN_SET){
-    parent->output->verbose(CALL_INFO,3,0,"AStar Pop Open Set\n");
+    parent->output->verbose(CALL_INFO,3,0,"AStar Pop Open Set index=%u\n",open_set_index());
 
     // load openSet[i] and fScore[i]. reuse gscore buffers
     const uint64_t open_set_index_addr = PIMDecoder::getSramBaseAddr() + (open_set_index() * sizeof(uint64_t));
@@ -420,7 +421,7 @@ bool AStar::clock() {
     }
 
     // check if vertex is in openst and if fscore less than lowest_fscore
-    bool found_lower_fscore;
+    bool found_lower_fscore = false;
     if(curr_fscore_loaded()){
       uint64_t curr_open_set_entry;
       std::memcpy(&curr_open_set_entry,curr_fscore_buffer.data(),sizeof(curr_open_set_entry));
@@ -458,7 +459,7 @@ bool AStar::clock() {
    
   }
   if(loop_state() == LOOP_STATE::CYCLE) {
-    parent->output->verbose(CALL_INFO,3,0,"AStar Cycle lowestfscoreindex=%u target=%u\n",lowest_fscore_index(),target);
+    parent->output->verbose(CALL_INFO,3,0,"AStar Cycle curr=%u neighbor=%u target=%u\n",lowest_fscore_index(),neighbor(),target);
     // return success if target is reached
     const bool curr_is_target = lowest_fscore_index() == target;
     if(curr_is_target) {
@@ -496,18 +497,17 @@ bool AStar::clock() {
           const unsigned neighbor_edge_index = (lowest_fscore_index() * vertices) + neighbor();
           buffer_head = neighbor_edge_index + (d.size() / sizeof(uint64_t));
           buffer_tail = neighbor_edge_index;
-          parent->output->verbose(CALL_INFO,3,0,"buffer = rolling widnow returned\n");
         }
       );
     }
 
     // load g scores if neighbor has an edge
-    uint64_t neighbor_distance;
-    bool neighbor_has_edge;
+    uint64_t neighbor_distance = UINT32_MAX;
+    bool neighbor_has_edge = false;
     if(neighbor_edge_loaded){
       const uint64_t neighbor_buffer_index = neighbor_edge_index - buffer_tail();
       std::memcpy(&neighbor_distance, ((uint64_t*)parent->buffer.data()) + neighbor_buffer_index,sizeof(uint64_t));
-      neighbor_has_edge = neighbor_distance < UINT64_MAX;
+      neighbor_has_edge = neighbor_distance < UINT32_MAX;
       const bool load_curr_gscore = neighbor_has_edge && neighbor_edge_loaded && !curr_gscore_loaded();
       if(load_curr_gscore){
         const uint64_t curr_gscore_addr = PIMDecoder::getSramBaseAddr() + (lowest_fscore_index() * sizeof(uint64_t));
@@ -524,8 +524,8 @@ bool AStar::clock() {
     }
 
     // compare g scores
-    uint64_t tentative_gscore; //treated as const, simulation optimization
-    bool shorter_path_found; //treated as const, simulation optimization
+    uint64_t tentative_gscore = 0;
+    bool shorter_path_found = false;
     const bool compare_gscores = neighbor_has_edge && curr_gscore_loaded() && neighbor_gscore_loaded();
     if(compare_gscores) {
       uint64_t curr_gscore;
@@ -564,7 +564,6 @@ bool AStar::clock() {
     // setup for next neighbor if this one does not has an edge or has been updated
     const bool neighbor_checked = (neighbor_edge_loaded && !neighbor_has_edge) || ((curr_gscore_loaded() && neighbor_gscore_loaded()) && (do_update || !shorter_path_found));
     if(neighbor_checked){
-      parent->output->verbose(CALL_INFO,3,0,"do_next_neighbor\n");
       neighbor = neighbor() + 1;
       neighbor_gscore_loaded = false;
     }
