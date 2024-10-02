@@ -4,11 +4,11 @@ SECTIONS
   .bss : { *(.bss) }
   . = 0x0E000000;
   .func_base : { *(.func_base) }
-  . = 0xe000100;
+  . = 0x0E000100;
   .pimsram : { *(.pimsram) }
-  . = 0xe001100;
+  . = 0x0E001100;
   .pimdram : { *(.pimdram) }
-  . = 0xe400500; 
+  . = 0x0E400500; 
   .data : { *(.data) }
   .text : { *(.text) }
 }

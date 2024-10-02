@@ -26,7 +26,7 @@
 // Globals
 const uint64_t lfsr_seed = LFSR_SEED;
 const uint64_t lfsr_out_len = N;
-volatile uint64_t lfsr_out[lfsr_out_len] __attribute__((section(".pimdram")));
+volatile uint64_t lfsr_out[lfsr_out_len] __attribute__((section(".pimsram")));
 uint64_t check_data[lfsr_out_len];
 
 /**
@@ -83,7 +83,7 @@ size_t theApp() {
 size_t theApp() {
   size_t time1, time2;
   REV_TIME( time1 );
-  revpim::init(PIM::FUNC_NUM::U6, reinterpret_cast<uint64_t>(lfsr_out), lfsr_seed, lfsr_out_len);
+  revpim::init(PIM::FUNC_NUM::U6, (uint64_t) lfsr_out, lfsr_seed, lfsr_out_len);
   revpim::run(PIM::FUNC_NUM::U6);
   revpim::finish(PIM::FUNC_NUM::U6); // blocking polling loop :(
   REV_TIME( time2 );
@@ -97,7 +97,7 @@ size_t check() {
   REV_TIME( time1 );
   for (unsigned i=0; i<lfsr_out_len; i++) {
     if (check_data[i] != lfsr_out[i]) {
-      printf("Failed: check_data[%d]=0x%lx lfsr_out[%d]=0x%lx\n",
+      printf("Failed: check_data[%d]=0x%llx lfsr_out[%d]=0x%llx\n",
               i, check_data[i], i, lfsr_out[i]);
       assert(false);
     }
