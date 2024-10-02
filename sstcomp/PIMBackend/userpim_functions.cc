@@ -390,7 +390,6 @@ bool AStar::clock() {
       dma_state = DMA_STATE::BUSY;
       const uint64_t src_came_from_addr = came_from_base_addr + (src * sizeof(uint64_t));
       parent->m_issueDRAMRequest(src_came_from_addr,&src_vec,DMA_WRITE,[this]( const MemEventBase::dataVec& d ) {
-        parent->output->verbose(CALL_INFO,3,0,"came_from[src] = src returned\n");
         dma_state = DMA_STATE::IDLE;
       });
       open_set_index = open_set_index() + 1;
@@ -488,11 +487,6 @@ bool AStar::clock() {
         [this](const MemEventBase::dataVec & d){
           assert(parent->buffer.size() == d.size());
           std::memcpy(parent->buffer.data(), d.data(), d.size());
-          const uint64_t * p = (uint64_t*)parent->buffer.data();
-          const uint64_t * p2 = (uint64_t*)d.data();
-          for(unsigned i = 0; i < 8; i++){
-            parent->output->verbose(CALL_INFO,3,0,"d[%u]=%llu buffer[%u]=%llu\n",i,p2[i],i,p[i]);
-          }
           dma_state = DMA_STATE::IDLE;
           const unsigned neighbor_edge_index = (lowest_fscore_index() * vertices) + neighbor();
           buffer_head = neighbor_edge_index + (d.size() / sizeof(uint64_t));
@@ -534,13 +528,11 @@ bool AStar::clock() {
       std::memcpy(&neighbor_gscore,neighbor_gscore_buffer.data(),sizeof(neighbor_gscore));
       tentative_gscore = (curr_gscore & UINT32_MAX) + neighbor_distance;
       shorter_path_found = tentative_gscore < (neighbor_gscore & UINT32_MAX);
-      parent->output->verbose(CALL_INFO,3,0,"curr_gscore=%u dist=%u neighbor_gscore=%u shorter_path_found=%u\n",curr_gscore,neighbor_distance,(neighbor_gscore & UINT32_MAX),shorter_path_found);
     }
 
+    //update came_from[neighbor]
     const bool do_update = shorter_path_found && (dma_state() == DMA_STATE::IDLE);
     if(do_update){
-      parent->output->verbose(CALL_INFO,3,0,"found shorter path between curr=%u and neighbor=%u tentative_gscore=%llu\n",lowest_fscore_index(),neighbor(),tentative_gscore);
-      //update came_from[neighbor]
       const uint64_t neighbor_came_from_addr = came_from_base_addr + (neighbor() * sizeof(uint64_t));
       const uint64_t curr = lowest_fscore_index();
       MemEventBase::dataVec curr_vec(sizeof(curr));

@@ -80,17 +80,17 @@ private:
   SequentialLogic<LOOP_STATE> loop_state   = LOOP_STATE::IDLE;
   uint64_t   matrix_base_addr;
   uint64_t   rand_base_addr;
-  uint64_t   dist_mask;
-  uint64_t   vertices;
+  uint32_t   dist_mask;
   uint32_t   prob_mask;
+  unsigned   vertices;
   SequentialLogic<uint64_t> curr_row;
   SequentialLogic<uint64_t> curr_col;
   SequentialLogic<bool> row_loaded;
   SequentialLogic<bool> col_loaded;
   SequentialLogic<uint64_t> buffer_head;
   SequentialLogic<uint64_t> matrix_head;
-  MemEventBase::dataVec curr_row_buffer = {0,0,0,0,0,0,0,0};
-  MemEventBase::dataVec curr_col_buffer = {0,0,0,0,0,0,0,0};
+  MemEventBase::dataVec curr_row_buffer = MemEventBase::dataVec(8);
+  MemEventBase::dataVec curr_col_buffer = MemEventBase::dataVec(8);
 };  //class SymmetricDistanceMatrix
 
 class AStar : public FSM {
@@ -108,8 +108,8 @@ private:
   uint64_t came_from_base_addr;
   uint64_t matrix_base_addr;
   uint64_t ret_code_addr;
-  uint64_t src;
-  uint64_t target;
+  unsigned src;
+  unsigned target;
   unsigned vertices;
   SequentialLogic<unsigned> open_set_index;
   SequentialLogic<unsigned> lowest_fscore;
@@ -126,8 +126,7 @@ private:
   MemEventBase::dataVec curr_fscore_buffer = MemEventBase::dataVec(8);
   MemEventBase::dataVec curr_gscore_buffer = MemEventBase::dataVec(8);
   MemEventBase::dataVec neighbor_gscore_buffer = MemEventBase::dataVec(8);
-  uint64_t cycle = 0;
-};
+}; //class AStar
 
 } // namespace SST::PIM
 
