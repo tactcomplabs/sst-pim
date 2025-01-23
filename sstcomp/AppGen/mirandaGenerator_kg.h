@@ -16,13 +16,11 @@
 #ifndef _H_SST_APP_GEN_REQUEST_GEN
 #define _H_SST_APP_GEN_REQUEST_GEN
 
-#include <sst/core/component.h>
-#include <sst/core/interfaces/stdMem.h>
-#include <sst/core/output.h>
-#include <sst/core/subcomponent.h>
+// clang-format off
+#include "sst_app.h"
 #include <stdint.h>
-
 #include <queue>
+// clang-format on
 
 namespace SST {
 namespace AppGen {
@@ -39,16 +37,19 @@ public:
 
   uint64_t getRequestID() const { return reqID; }
 
-  void addDependency( uint64_t depReq ) { dependsOn.push_back( depReq ); }
+  void addDependency(uint64_t depReq) { dependsOn.push_back(depReq); }
 
-  void satisfyDependency( const GeneratorRequest* req ) { satisfyDependency( req->getRequestID() ); }
+  void satisfyDependency(const GeneratorRequest *req) {
+    satisfyDependency(req->getRequestID());
+  }
 
-  void satisfyDependency( const uint64_t req ) {
+  void satisfyDependency(const uint64_t req) {
     std::vector<uint64_t>::iterator searchDeps;
 
-    for( searchDeps = dependsOn.begin(); searchDeps != dependsOn.end(); searchDeps++ ) {
-      if( req == ( *searchDeps ) ) {
-        dependsOn.erase( searchDeps );
+    for (searchDeps = dependsOn.begin(); searchDeps != dependsOn.end();
+         searchDeps++) {
+      if (req == (*searchDeps)) {
+        dependsOn.erase(searchDeps);
         break;
       }
     }
@@ -58,70 +59,69 @@ public:
 
   uint64_t getIssueTime() const { return issueTime; }
 
-  void setIssueTime( const uint64_t now ) { issueTime = now; }
+  void setIssueTime(const uint64_t now) { issueTime = now; }
 
 protected:
-  uint64_t              reqID;
-  uint64_t              issueTime;
+  uint64_t reqID;
+  uint64_t issueTime;
   std::vector<uint64_t> dependsOn;
 
 private:
   static std::atomic<uint64_t> nextGeneratorRequestID;
 };
 
-template<typename QueueType>
-class MirandaRequestQueue {
+template <typename QueueType> class MirandaRequestQueue {
 public:
   MirandaRequestQueue() {
-    theQ        = (QueueType*) malloc( sizeof( QueueType ) * 16 );
+    theQ = (QueueType *)malloc(sizeof(QueueType) * 16);
     maxCapacity = 16;
-    curSize     = 0;
+    curSize = 0;
   }
 
-  ~MirandaRequestQueue() { free( theQ ); }
+  ~MirandaRequestQueue() { free(theQ); }
 
   bool empty() const { return 0 == curSize; }
 
-  void resize( const uint32_t newSize ) {
-    //		printf("Resizing MirandaQueue from: %" PRIu32 " to %" PRIu32 "\n",
-    //			curSize, newSize);
+  void resize(const uint32_t newSize) {
+    //		printf("Resizing MirandaQueue from: %" PRIu32 " to %" PRIu32
+    //"\n", 			curSize, newSize);
 
-    QueueType* newQ = (QueueType*) malloc( sizeof( QueueType ) * newSize );
-    for( uint32_t i = 0; i < curSize; ++i ) {
+    QueueType *newQ = (QueueType *)malloc(sizeof(QueueType) * newSize);
+    for (uint32_t i = 0; i < curSize; ++i) {
       newQ[i] = theQ[i];
     }
 
-    free( theQ );
-    theQ        = newQ;
+    free(theQ);
+    theQ = newQ;
     maxCapacity = newSize;
-    curSize     = std::min( curSize, newSize );
+    curSize = std::min(curSize, newSize);
   }
 
   uint32_t size() const { return curSize; }
 
   uint32_t capacity() const { return maxCapacity; }
 
-  QueueType at( const uint32_t index ) { return theQ[index]; }
+  QueueType at(const uint32_t index) { return theQ[index]; }
 
-  void erase( const std::vector<uint32_t> eraseList ) {
-    if( 0 == eraseList.size() ) {
+  void erase(const std::vector<uint32_t> eraseList) {
+    if (0 == eraseList.size()) {
       return;
     }
 
-    QueueType* newQ        = (QueueType*) malloc( sizeof( QueueType ) * maxCapacity );
+    QueueType *newQ = (QueueType *)malloc(sizeof(QueueType) * maxCapacity);
 
     uint32_t nextSkipIndex = 0;
-    uint32_t nextSkip      = eraseList.at( nextSkipIndex );
+    uint32_t nextSkip = eraseList.at(nextSkipIndex);
     uint32_t nextNewQIndex = 0;
 
-    for( uint32_t i = 0; i < curSize; ++i ) {
-      if( nextSkip == i ) {
+    for (uint32_t i = 0; i < curSize; ++i) {
+      if (nextSkip == i) {
         nextSkipIndex++;
 
-        if( nextSkipIndex >= eraseList.size() ) {
+        if (nextSkipIndex >= eraseList.size()) {
           nextSkip = curSize;
         } else {
-          nextSkip = eraseList.at( nextSkipIndex );
+          nextSkip = eraseList.at(nextSkipIndex);
         }
       } else {
         newQ[nextNewQIndex] = theQ[i];
@@ -129,15 +129,15 @@ public:
       }
     }
 
-    free( theQ );
+    free(theQ);
 
-    theQ    = newQ;
+    theQ = newQ;
     curSize = nextNewQIndex;
   }
 
-  void push_back( QueueType t ) {
-    if( curSize == maxCapacity ) {
-      resize( maxCapacity + 16 );
+  void push_back(QueueType t) {
+    if (curSize == maxCapacity) {
+      resize(maxCapacity + 16);
     }
 
     theQ[curSize] = t;
@@ -145,21 +145,22 @@ public:
   }
 
 private:
-  QueueType* theQ;
-  uint32_t   maxCapacity;
-  uint32_t   curSize;
+  QueueType *theQ;
+  uint32_t maxCapacity;
+  uint32_t curSize;
 };
 
 class MemoryOpRequest : public GeneratorRequest {
 public:
-  MemoryOpRequest( const uint64_t cAddr, const uint64_t cLength, const ReqOperation cOpType, const uint64_t cData = 0 )
-    : GeneratorRequest(), addr( cAddr ), length( cLength ), op( cOpType ) {
-    setData( cData );
+  MemoryOpRequest(const uint64_t cAddr, const uint64_t cLength,
+                  const ReqOperation cOpType, const uint64_t cData = 0)
+      : GeneratorRequest(), addr(cAddr), length(cLength), op(cOpType) {
+    setData(cData);
   }
 
   ~MemoryOpRequest() {}
 
-  ReqOperation getOperation() const { return op; }
+  ReqOperation getOperation() const override { return op; }
 
   bool isRead() const { return op == READ; }
 
@@ -171,42 +172,43 @@ public:
 
   uint64_t getLength() const { return length; }
 
-  void setData( uint64_t d ) {
+  void setData(uint64_t d) {
     length = 8;
-    if( data.size() != 8 )
-      data.resize( 8 );
-    for( int i = 0; i < 8; i++ )
-      data[i] = ( d >> ( i * 8 ) ) & 0x0ff;
+    if (data.size() != 8)
+      data.resize(8);
+    for (size_t i = 0; i < 8; i++)
+      data[i] = (d >> (i * 8)) & 0x0ff;
   }
 
   uint64_t getData() const {
-    assert( length == 8 );
-    assert( data.size() == 8 );
+    assert(length == 8);
+    assert(data.size() == 8);
     uint64_t d = 0;
-    for( int i = 0; i < 8; i++ )
-      d |= ( (uint64_t) data[i] ) << ( i * 8 );
+    for (size_t i = 0; i < 8; i++)
+      d |= ((uint64_t)data[i]) << (i * 8);
     return d;
   }
 
 protected:
-  uint64_t             addr;
-  uint64_t             length;
+  uint64_t addr;
+  uint64_t length;
   std::vector<uint8_t> data;
-  ReqOperation         op;
+  ReqOperation op;
 };
 
 class CustomOpRequest : public GeneratorRequest {
 public:
-  CustomOpRequest( Interfaces::StandardMem::CustomData* cData ) : GeneratorRequest(), data( cData ) {}
+  CustomOpRequest(Interfaces::StandardMem::CustomData *cData)
+      : GeneratorRequest(), data(cData) {}
 
   ~CustomOpRequest() {}
 
-  ReqOperation getOperation() const { return CUSTOM; }
+  ReqOperation getOperation() const override { return CUSTOM; }
 
-  Interfaces::StandardMem::CustomData* getPayload() { return data; }
+  Interfaces::StandardMem::CustomData *getPayload() { return data; }
 
 protected:
-  Interfaces::StandardMem::CustomData* data;
+  Interfaces::StandardMem::CustomData *data;
 };
 
 class FenceOpRequest : public GeneratorRequest {
@@ -215,26 +217,26 @@ public:
 
   ~FenceOpRequest() {}
 
-  ReqOperation getOperation() const { return REQ_FENCE; }
+  ReqOperation getOperation() const override { return REQ_FENCE; }
 };
 
 class RequestGenerator : public SubComponent {
 
 public:
-  SST_ELI_REGISTER_SUBCOMPONENT_API( SST::AppGen::RequestGenerator )
+  SST_ELI_REGISTER_SUBCOMPONENT_API(SST::AppGen::RequestGenerator)
 
-  RequestGenerator( ComponentId_t id, Params& params ) : SubComponent( id ) {}
+  RequestGenerator(ComponentId_t id, Params &params) : SubComponent(id) {}
 
   ~RequestGenerator() {}
 
-  virtual void generate( MirandaRequestQueue<GeneratorRequest*>* q ) {}
+  virtual void generate(MirandaRequestQueue<GeneratorRequest *> *q) {}
 
   virtual bool isFinished() { return true; }
 
   virtual void completed() {}
 };
 
-}  // namespace AppGen
-}  // namespace SST
+} // namespace AppGen
+} // namespace SST
 
-#endif  //#define _H_SST_APP_GEN_REQUEST_GEN
+#endif // #define _H_SST_APP_GEN_REQUEST_GEN

@@ -6,11 +6,12 @@
  * See LICENSE in the top level directory for licensing details
  */
 
+// clang-format off
+#include "app.h"
 #include <assert.h>
 #include <iostream>
 #include <sstream>
-
-#include "app.h"
+// clang-format on
 
 using namespace SST::AppGen;
 
@@ -45,7 +46,7 @@ void SST::AppGen::App::send(SRAM_CMD cmd, uint64_t address, uint64_t data) {
   appLink->cv.notify_one();
 }
 
-int SST::AppGen::App::receive(uint64_t &data) {
+size_t SST::AppGen::App::receive(uint64_t &data) {
   // Currently requires loads to return in order.
   // TODO throttle generate to not be called when there are outstanding loads
   // (use dependencies?)
@@ -55,7 +56,7 @@ int SST::AppGen::App::receive(uint64_t &data) {
   } while (--timeout > 0 && appLink->loadQ.size() == 0);
 
   if (appLink->loadQ.size() == 0)
-    return -1;
+    return 1;
   if (appLink->loadQ.size() > 1)
     return appLink->loadQ.size();
   data = appLink->loadQ.front();

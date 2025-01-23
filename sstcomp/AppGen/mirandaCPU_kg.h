@@ -16,15 +16,11 @@
 #ifndef _H_SST_APPGEN_MIRANDA_CPU
 #define _H_SST_APPGEN_MIRANDA_CPU
 
-#include <sst/core/component.h>
-#include <sst/core/interfaces/stdMem.h>
-#include <sst/core/statapi/stataccumulator.h>
-
 // clang-format off
+#include "sst_app.h"
 #include "mirandaEvent_kg.h"
 #include "mirandaGenerator_kg.h"
 #include "mirandaMemMgr_kg.h"
-
 #include "appLink.h"
 // clang-format on
 
@@ -37,7 +33,8 @@ namespace AppGen {
 
 class CPURequest {
 public:
-  CPURequest( const uint64_t origID ) : originalID( origID ), issueTime( 0 ), outstandingParts( 0 ) {}
+  CPURequest(const uint64_t origID)
+      : originalID(origID), issueTime(0), outstandingParts(0) {}
 
   void incPartCount() { outstandingParts++; }
 
@@ -45,7 +42,7 @@ public:
 
   bool completed() const { return 0 == outstandingParts; }
 
-  void setIssueTime( const uint64_t now ) { issueTime = now; }
+  void setIssueTime(const uint64_t now) { issueTime = now; }
 
   uint64_t getIssueTime() const { return issueTime; }
 
@@ -61,25 +58,25 @@ protected:
 
 class RequestGenCPU_KG : public SST::Component {
 public:
-  RequestGenCPU_KG( SST::ComponentId_t id, SST::Params& params );
-  void finish();
-  void init( unsigned int phase );
+  RequestGenCPU_KG(SST::ComponentId_t id, SST::Params &params);
+  void finish() override;
+  void init(unsigned int phase) override;
 
   /* Handler class for StandardMem responses */
   class StdMemHandler : public SST::Interfaces::StandardMem::RequestHandler {
   public:
     friend class RequestGenCPU_KG;
 
-    StdMemHandler( RequestGenCPU_KG* cpuInst, SST::Output* out )
-      : SST::Interfaces::StandardMem::RequestHandler( out ), cpu( cpuInst ) {}
+    StdMemHandler(RequestGenCPU_KG *cpuInst, SST::Output *out)
+        : SST::Interfaces::StandardMem::RequestHandler(out), cpu(cpuInst) {}
 
     virtual ~StdMemHandler() {}
 
-    virtual void handle( SST::Interfaces::StandardMem::ReadResp* rsp ) override;
-    virtual void handle( SST::Interfaces::StandardMem::WriteResp* rsp ) override;
-    virtual void handle( SST::Interfaces::StandardMem::CustomResp* rsp ) override;
+    void handle(SST::Interfaces::StandardMem::ReadResp *rsp) override;
+    void handle(SST::Interfaces::StandardMem::WriteResp *rsp) override;
+    void handle(SST::Interfaces::StandardMem::CustomResp *rsp) override;
 
-    RequestGenCPU_KG* cpu;
+    RequestGenCPU_KG *cpu;
   };
 
   // clang-format off
@@ -93,7 +90,7 @@ SST_ELI_REGISTER_COMPONENT(
     )
 
 	SST_ELI_DOCUMENT_PARAMS(
-        { "args", "Application command line arguments."},
+        { "args", "Application command line arguments.", ""},
         { "max_reqs_cycle",   "Maximum number of requests the CPU can issue per cycle (this is for all reads and writes)", "2" },
         { "max_reorder_lookups", "Maximum number of operations the CPU is allowed to lookup for memory reorder", "16" },
         { "cache_line_size",  "The size of the cache line that this prefetcher is attached to, default is 64-bytes", "64" },
@@ -142,32 +139,32 @@ SST_ELI_REGISTER_COMPONENT(
   // clang-format on
 
 private:
-  RequestGenCPU_KG();                           // for serialization only
-  RequestGenCPU_KG( const RequestGenCPU_KG& );  // do not implement
-  void operator=( const RequestGenCPU_KG& );    // do not implement
+  RequestGenCPU_KG();                         // for serialization only
+  RequestGenCPU_KG(const RequestGenCPU_KG &); // do not implement
+  void operator=(const RequestGenCPU_KG &);   // do not implement
   ~RequestGenCPU_KG();
 
-  void loadGenerator( MirandaReqEvent* );
-  void loadGenerator( const std::string& name, SST::Params& params );
-  void handleEvent( StandardMem::Request* ev );
-  bool clockTick( SST::Cycle_t );
-  void issueRequest( MemoryOpRequest* req );
-  void issueCustomRequest( CustomOpRequest* req );
-  void handleSrcEvent( SST::Event* );
+  void loadGenerator(MirandaReqEvent *);
+  void loadGenerator(const std::string &name, SST::Params &params);
+  void handleEvent(StandardMem::Request *ev);
+  bool clockTick(SST::Cycle_t);
+  void issueRequest(MemoryOpRequest *req);
+  void issueCustomRequest(CustomOpRequest *req);
+  void handleSrcEvent(SST::Event *);
 
-  Output* out;
+  Output *out;
 
-  TimeConverter*                                    timeConverter;
-  Clock::HandlerBase*                               clockHandler;
-  RequestGenerator*                                 reqGen;
-  std::map<StandardMem::Request::id_t, CPURequest*> requestsInFlight;
-  StandardMem*                                      cache_link;
-  Link*                                             srcLink;
-  MirandaReqEvent*                                  srcReqEvent;
-  StdMemHandler*                                    stdMemHandlers;
+  TimeConverter *timeConverter;
+  Clock::HandlerBase *clockHandler;
+  RequestGenerator *reqGen;
+  std::map<StandardMem::Request::id_t, CPURequest *> requestsInFlight;
+  StandardMem *cache_link;
+  Link *srcLink;
+  MirandaReqEvent *srcReqEvent;
+  StdMemHandler *stdMemHandlers;
 
-  MirandaRequestQueue<GeneratorRequest*> pendingRequests;
-  MirandaMemoryManager*                  memMgr;
+  MirandaRequestQueue<GeneratorRequest *> pendingRequests;
+  MirandaMemoryManager *memMgr;
 
   uint32_t maxRequestsPending[OPCOUNT];
   uint32_t requestsPending[OPCOUNT];
@@ -176,23 +173,23 @@ private:
   uint32_t maxOpLookup;
 
   // Application Transactor extension
-  const bool      useAppLink = true;
+  const bool useAppLink = true;
   AppGen::AppLink appLink;
-  bool            appSpawned = false;
+  bool appSpawned = false;
 
-  Statistic<uint64_t>* statReqs[OPCOUNT];
-  Statistic<uint64_t>* statSplitReqs[OPCOUNT];
-  Statistic<uint64_t>* statCyclesWithIssue;
-  Statistic<uint64_t>* statMaxIssuePerCycle;
-  Statistic<uint64_t>* statCyclesWithoutIssue;
-  Statistic<uint64_t>* statBytes[OPCOUNT];
-  Statistic<uint64_t>* statReqLatency;
-  Statistic<uint64_t>* statTime;
-  Statistic<uint64_t>* statCyclesHitFence;
-  Statistic<uint64_t>* statCyclesHitReorderLimit;
-  Statistic<uint64_t>* statCycles;
+  Statistic<uint64_t> *statReqs[OPCOUNT];
+  Statistic<uint64_t> *statSplitReqs[OPCOUNT];
+  Statistic<uint64_t> *statCyclesWithIssue;
+  Statistic<uint64_t> *statMaxIssuePerCycle;
+  Statistic<uint64_t> *statCyclesWithoutIssue;
+  Statistic<uint64_t> *statBytes[OPCOUNT];
+  Statistic<uint64_t> *statReqLatency;
+  Statistic<uint64_t> *statTime;
+  Statistic<uint64_t> *statCyclesHitFence;
+  Statistic<uint64_t> *statCyclesHitReorderLimit;
+  Statistic<uint64_t> *statCycles;
 };
 
-}  // namespace AppGen
-}  // namespace SST
-#endif  //_H_SST_APPGEN_MIRANDA_CPU
+} // namespace AppGen
+} // namespace SST
+#endif //_H_SST_APPGEN_MIRANDA_CPU

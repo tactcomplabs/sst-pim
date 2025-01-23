@@ -17,11 +17,8 @@
 #define _H_SST_APPGEN_MIRANDA_EVENT_EVENT
 
 // clang-format off
-// order dependent includes
+#include "sst_app.h"
 #include <stdint.h>
-#include <sst/core/event.h>
-#include <sst/core/params.h>
-
 // clang-format on
 
 namespace SST {
@@ -39,13 +36,13 @@ public:
   uint64_t key;
 
 private:
-  void serialize_order( SST::Core::Serialization::serializer& ser ) override {
-    Event::serialize_order( ser );
-    ser& key;
-    ser& generators;
+  void serialize_order(SST::Core::Serialization::serializer &ser) override {
+    Event::serialize_order(ser);
+    ser & key;
+    ser & generators;
   }
 
-  ImplementSerializable( SST::AppGen::MirandaReqEvent );
+  ImplementSerializable(SST::AppGen::MirandaReqEvent);
 };
 
 class MirandaRspEvent : public SST::Event {
@@ -53,15 +50,15 @@ public:
   uint64_t key;
 
 private:
-  void serialize_order( SST::Core::Serialization::serializer& ser ) override {
-    Event::serialize_order( ser );
-    ser& key;
+  void serialize_order(SST::Core::Serialization::serializer &ser) override {
+    Event::serialize_order(ser);
+    ser & key;
   }
 
-  ImplementSerializable( SST::AppGen::MirandaRspEvent );
+  ImplementSerializable(SST::AppGen::MirandaRspEvent);
 };
 
-}  // namespace AppGen
-}  // namespace SST
+} // namespace AppGen
+} // namespace SST
 
-#endif  //_H_SST_APPGEN_MIRANDA_EVENT_EVENT
+#endif //_H_SST_APPGEN_MIRANDA_EVENT_EVENT
