@@ -14,7 +14,6 @@
 // distribution.
 
 // clang-format off
-// order dependent includes
 #include "appTransactor.h"
 #include "mirandaGenerator_kg.h"
 #include "mirandaCPU_kg.h"

@@ -470,7 +470,9 @@ void MemControllerKG::handlePIMEvent(SST::Event *event) {
   handleEvent(event);
 }
 
-void MemControllerKG::handleFLinkEvent(SST::Event *event) { assert(false); }
+void MemControllerKG::handleFLinkEvent(SST::Event *event) {
+  out.fatal(CALL_INFO, -1, "forward link handler not implemented\n");
+}
 
 void MemControllerKG::handleEvent(SST::Event *event) {
   if (!clockOn_) {
@@ -589,6 +591,8 @@ void MemControllerKG::handleEvent(SST::Event *event) {
   // Notify our listeners that we have received an event
   notifyListeners(ev);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
   switch (cmd) {
   case Command::PutM:
     ev->setFlag(MemEvent::F_NORESPONSE);
@@ -642,6 +646,7 @@ void MemControllerKG::handleEvent(SST::Event *event) {
               "Memory controller received unrecognized command: %s",
               CommandString[(int)cmd]);
   }
+#pragma GCC diagnostic pop
 }
 
 bool MemControllerKG::clock(Cycle_t cycle) {

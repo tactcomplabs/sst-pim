@@ -24,7 +24,7 @@
 namespace SST {
 namespace AppGen {
 
-class MirandaReqEvent : public SST::Event {
+class MirandaReqEvent final : public SST::Event {
 public:
   struct Generator {
     std::string name;
@@ -38,8 +38,8 @@ public:
 private:
   void serialize_order(SST::Core::Serialization::serializer &ser) override {
     Event::serialize_order(ser);
-    ser & key;
-    ser & generators;
+    ser &key;
+    ser &generators;
   }
 
   ImplementSerializable(SST::AppGen::MirandaReqEvent);
@@ -52,7 +52,7 @@ public:
 private:
   void serialize_order(SST::Core::Serialization::serializer &ser) override {
     Event::serialize_order(ser);
-    ser & key;
+    ser &key;
   }
 
   ImplementSerializable(SST::AppGen::MirandaRspEvent);

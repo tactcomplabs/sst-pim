@@ -150,7 +150,7 @@ private:
   uint32_t curSize;
 };
 
-class MemoryOpRequest : public GeneratorRequest {
+class MemoryOpRequest final : public GeneratorRequest {
 public:
   MemoryOpRequest(const uint64_t cAddr, const uint64_t cLength,
                   const ReqOperation cOpType, const uint64_t cData = 0)

@@ -23,9 +23,9 @@ public:
   AppTransactor(ComponentId_t id, Params &params);
   ~AppTransactor();
 
-  virtual void spawnApp(AppLink *_appLink) {};
+  virtual void spawnApp(AppLink *_appLink){};
 
-  void generate(MirandaRequestQueue<GeneratorRequest *> *q) override;
+  void generate(MirandaRequestQueue<GeneratorRequest *> *q) final;
   bool isFinished() override;
   void completed() override;
   void handleLoadResponse(uint64_t data);

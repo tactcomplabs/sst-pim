@@ -19,10 +19,10 @@ namespace SST::AppGen {
 class AppTest : public App {
 public:
   AppTest(AppLink *_link);
-  void theApp() override;
+  void theApp() final;
 }; // AppTest
 
-class AppxTest : public AppTransactor {
+class AppxTest final : public AppTransactor {
 
 public:
   AppxTest(ComponentId_t id, Params &params) : AppTransactor(id, params) {}
@@ -34,7 +34,7 @@ public:
 
   SST_ELI_DOCUMENT_PARAMS({"verbose", "Sets the verbosity of the output", "0"})
 
-  void spawnApp(AppLink *_appLink) override {
+  void spawnApp(AppLink *_appLink) final {
     assert(appLink == nullptr);
     appLink = _appLink;
     app = new AppTest(appLink);

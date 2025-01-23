@@ -22,7 +22,7 @@ public:
   virtual ~App();
   void setOutput(Output *out);
   int spawn();
-  virtual void theApp() {};
+  virtual void theApp() = 0;
 
   // Syncrhonized access functions invoked by the derived application.
   // Making these public to allow runtime to access them using App* pointer.

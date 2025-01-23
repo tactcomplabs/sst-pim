@@ -15,9 +15,9 @@
 
 using namespace SST::AppGen;
 
-App::App(AppLink *_appLink) : appLink(_appLink) {};
+App::App(AppLink *_appLink) : appLink(_appLink){};
 
-App::~App() {}
+App::~App(){};
 
 void SST::AppGen::App::setOutput(Output *_out) {
   assert(_out);
