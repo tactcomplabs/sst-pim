@@ -16,7 +16,7 @@ Tested on the following platforms
 Checkout and build the 'fastprint' branch of the REV CPU.
 
 ```
-export PIM_REV_HOME=<path to REV>
+export REVHOME=<path to REV>
 git clone git@github.com:kpgriesser/sst-pim.git
 cd sst-pim
 mkdir build
@@ -57,7 +57,7 @@ The finite state machines (FSMs) are in sstcomp/PIMBackend:
 ## Appx (Application Driver) Examples
 
 The application driver replaces the REV CPU with application code compiled on that host and loaded as a Miranda subcomponent.
-This provides an efficient methods to test the PIM independently of the REV CPU. 
+This provides an efficient methods to test the PIM independently of the REV CPU.
 
 ```
 cd test/pim
