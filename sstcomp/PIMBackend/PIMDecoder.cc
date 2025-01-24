@@ -10,7 +10,6 @@
 
 namespace SST::PIM {
 
-//TODO remove dependencies
 PIMDecoder::PIMDecoder( uint64_t _node ) : node( _node ) {
   assert(node==0);
   // TODO nodeOffset = node * NODE_OFFSET_MULTIPLIER
