@@ -22,10 +22,9 @@ public:
   bool     clock( SST::Cycle_t ) override;
   uint64_t getCycle() override;
   bool     isMMIO( uint64_t addr ) override;
-  PIMDecodeInfo  getDecodeInfo( uint64_t addr);
   // IO access functions
   void read( Addr, uint64_t numBytes, std::vector<uint8_t>& ) override;
-  void write( Addr, uint64_t numBytes, std::vector<uint8_t>* ) override;
+  void write( Addr, uint64_t numBytes, const std::vector<uint8_t>* ) override;
 
   // Primary functional state machine
   class FuncState {
@@ -56,10 +55,13 @@ private:
 
   // memory mapped IO
   std::vector<std::shared_ptr<PIMMemSegment>> PIMSegs;
-  uint64_t             sramArray[SRAM_SIZE/sizeof(uint64_t)] = { 0 };
+  std::vector<uint8_t> spdArray = std::vector<uint8_t>(PIMDecoder::getSramSize());
   std::deque<uint64_t> ctl_ops;
   void                 function_write( uint64_t data );
   uint64_t             decodeFuncNum( uint64_t address, unsigned numBytes );
+
+  // Map of function MMIO registers.
+  // Do NOT lookup with operator[key]. Use find(key) instead
   std::map< FUNC_NUM, shared_ptr<FuncState>> funcState;
 
 };  //class TCLPIM

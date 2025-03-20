@@ -9,7 +9,7 @@
 #
 
 # PIM Type (0:none, 1:test, 2:reserved, 3:tclpim)
-PIM_TYPE?=3
+export PIM_TYPE=3
 
 # REV paths
 REVLIBPATH ?= $(PIM_REV_HOME)/build/src
@@ -25,7 +25,7 @@ SSTOPTS += --add-lib-path=$(REVLIBPATH)
 OUTDIR = rev-output
 
 # Test Selection
-PIM_TESTS += $(notdir $(basename $(wildcard $(SRCDIR)/*.cc)))
+PIM_TESTS += $(notdir $(basename $(wildcard $(SRCDIR)/*.cpp)))
 
 # PIM MPI tests
 # PIM_MPI_TESTS += 
@@ -39,7 +39,7 @@ endif
 TLIST ?= $(ALL_TESTS)
 
 # REV Executables
-SRCS   := $(basename $(notdir $(wildcard $(SRCDIR)/*.cc)))
+SRCS   := $(basename $(notdir $(wildcard $(SRCDIR)/*.cpp)))
 EXES   := $(addprefix $(OUTDIR)/bin/,$(addsuffix .exe,$(SRCS)))
 DIASMS := $(patsubst %.exe,%.dis,$(EXES))
 SECTIONS := $(patsubst %.exe,%.sections,$(EXES))
@@ -61,7 +61,7 @@ RVOBJDUMP=riscv64-unknown-elf-objdump
 OBJDUMP   = ${RVOBJDUMP} --source -l -dC -Mno-aliases
 
 # Rev headers
-INCLUDE  := -I$(PIM_REV_HOME)/common/syscalls
+INCLUDE  += -I$(PIM_REV_HOME)/common/syscalls
 INCLUDE  += -I$(PIM_REV_HOME)/test/include
 
 # PIM headers
@@ -84,7 +84,7 @@ WFLAGS    += -Wno-unused-function -Wno-unused-parameter
 #WFLAGS    += -Werror
 # DEBUG_FLAGS := -DDEBUG_MODE
 FLAGS     := $(CCOPT) $(WFLAGS) $(DEBUG_FLAGS) -static -lm -fpermissive
-ARCH      := rv64g
+ARCH      := rv64gc
 # ABI       := -mabi=lp64d
 
 # Test Specific Customization
@@ -101,10 +101,10 @@ ARCH      := rv64g
 	@$(eval pdffile = $(basename $@).pdf)
 	@rm -f $(statf) $(dotfile) $(pdffile)
 	@echo Running $(basename $@)
-	$(OPTS) PIM_TYPE=$(PIM_TYPE) OUTPUT_DIRECTORY=$(@D) ARCH=$(ARCH)_zicntr REV_EXE=$(exe) \
+	$(OPTS) OUTPUT_DIRECTORY=$(@D) ARCH=$(ARCH) REV_EXE=$(exe) \
  $(MPIOPTS) $(SST) $(SSTOPTS) \
- --output-json=$(@D)/rank.json $(SSTCFG) \
-  > $@ && (echo "pass" > $(statf); $(DOT2PDF))
+ --output-json=$(@D)/rank.json $(SSTCFG) 2>&1 \
+  | tee $@ && (echo "pass" > $(statf); $(DOT2PDF))
 
 # To run all even if they fail use this instead
 #  > $@ && (echo "pass" > $(statf); $(DOT2PDF)) || echo "fail" > $(statf)
@@ -124,15 +124,20 @@ ifndef NO_LINK
 $(OUTDIR)/bin/%.exe: $(OUTDIR)/bin/%.o $(SRCDIR)/pim.lds
 	$(LD) -o $@ -T $(SRCDIR)/pim.lds $<
 
-$(OUTDIR)/bin/%.o: $(SRCDIR)/%.cc
+$(OUTDIR)/bin/%.o: $(SRCDIR)/%.cpp
 	@mkdir -p $(@D)
 	$(CC) $(FLAGS) -o $@ -g -c $< -march=$(ARCH) $(ABI) $(INCLUDE) $(LIBS)
 else
-$(OUTDIR)/bin/%.exe: $(SRCDIR)/%.cc
+$(OUTDIR)/bin/%.exe: $(SRCDIR)/%.cpp
 	@mkdir -p $(@D)
 	$(CC) $(FLAGS) -g -march=$(ARCH) $(ABI) $(INCLUDE) -o $@ $<
 endif
 
+# workaround for rev_openat on ubuntu
+.PHONY: %.dat
+%.dat:
+	mkdir $(@D)
+	touch $@
 
 clean:
 	rm -rf $(OUTDIR)
@@ -141,7 +146,6 @@ help:
 	@echo make compile
 	@echo make run
 	@echo make TLIST="test1 test2 ..."
-	@echo make DOT=1
 	@echo Valid TLIST selections are:
 	@echo $(ALL_TESTS)
 	@echo
@@ -150,6 +154,6 @@ help:
 
 .SECONDARY:
 
-.PRECIOUS: %.log %.revlog
+.PRECIOUS: %.log
 
 #-- EOF

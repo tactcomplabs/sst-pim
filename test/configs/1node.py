@@ -75,11 +75,6 @@ timing_params = {
 # User configuration settings
 #
 
-
-# REV machine type
-ARCH = os.getenv("ARCH","rv64g_zicntr")
-
-# Application Driver Test
 APP = os.getenv("APP")
 if APP:
     print(f"APP={APP}")
@@ -90,7 +85,6 @@ if INTERLEAVE not in SUPPORTED_INTERLEAVING:
     sys.exit(f"INTERLEAVE must be one of: {SUPPORTED_INTERLEAVING}")
 print(f"INTERLEAVE={INTERLEAVE}")
 
-# Command line arguments for elf
 ARGS = os.getenv("ARGS","");
 
 FORCE_NONCACHEABLE_REQS = os.getenv("FORCE_NONCACHEABLE_REQS",0)
@@ -128,8 +122,16 @@ SUPPORTED_MEMORY_MODELS = ["simpleMem","dramsim3"]
 MEMORY_MODEL = os.getenv("MEMORY_MODEL","simpleMem")
 MEMORY_CONTROLLER = "PIM.PIMMemController"
 
-PIM_TYPE = os.getenv("PIM_TYPE","0")  # 0:none, 1:test, 2:reserved, 3:tclpim
-print(f"PIM_TYPE={PIM_TYPE}")
+PIM_TYPE = os.getenv("PIM_TYPE","3")  # 0:none, 1:test, 2:reserved, 3:tclpim
+PIM_FUNC_BASE_ADDR = os.getenv("PIM_FUNC_BASE_ADDR",0x0E000000)
+PIM_SRAM_BASE_ADDR = os.getenv("PIM_SRAM_BASE_ADDR",0x0E000100)
+PIM_DRAM_BASE_ADDR = os.getenv("PIM_DRAM_BASE_ADDR",0x0E000500)
+PIM_REG_BOUND_ADDR = os.getenv("PIM_REG_BOUND_ADDR",0x0E100500)
+print(f"PIM_TYPE={PIM_TYPE}\n" +
+      f"PIM_FUNC_BASE_ADDR={hex(PIM_FUNC_BASE_ADDR)}\n" +
+      f"PIM_SRAM_BASE_ADDR={hex(PIM_SRAM_BASE_ADDR)}\n" +
+      f"PIM_DRAM_BASE_ADDR={hex(PIM_DRAM_BASE_ADDR)}\n" +
+      f"PIM_REG_BOUND_ADDR={hex(PIM_REG_BOUND_ADDR)}")
 
 if MEMORY_MODEL not in SUPPORTED_MEMORY_MODELS:
     sys.exit(f"MEMORY_MODEL must be one of: {SUPPORTED_MEMORY_MODELS}")
@@ -167,11 +169,11 @@ rev_params = {
     "clock" : timing_params['global_clock'],
                                                      # Adjust top of memory per stack
     "maxHeapSize" : (1024*1024*1024)>>4,             # Default is 1/4 mem size
-    "machine" : f"[CORES:{ARCH}]",                   # Core:Config
+    "machine" : "[CORES:RV64GCZicntr]",                    # Core:Config
     "memCost" : "[0:1:10]",                          # Memory loads required 1-10 cycles
     "program" : os.getenv("REV_EXE", "sanity.exe"),  # Target executable
     "enableMemH" : 1,                                # Enable memHierarchy support
-    #"trcStartCycle" : 1,                            # Begin cycle for tracing
+    #"trcStartCycle" : 1,                           # Begin cycle for tracing
     #"trcLimit" : 100,                               # End cycle for tracing
     "splash" : 0,                                    # Display the splash message
 }
@@ -208,10 +210,8 @@ l1cache_params = {
     "replacement_policy" : "lru",
 }
 
-PIM_REGION_BASE=0x0E000000             # FUNC_BASE
-PIM_REGION_BOUND=0x0f800000+0x00100000 # DRAM_BASE + DRAM_SIZE
 l1cache_ifc_params = {
-    "noncacheable_regions": [PIM_REGION_BASE, PIM_REGION_BOUND-1]
+    "noncacheable_regions": [PIM_FUNC_BASE_ADDR, PIM_REG_BOUND_ADDR-1]
 }
 
 l2cache_params = {
@@ -501,7 +501,11 @@ class NODE():
             "node_id" : node,
             "max_requests_per_cycle" : 128,
             "request_delay" : "1ns",
-            "pim_type" : PIM_TYPE
+            "pim_type" : PIM_TYPE,
+            "func_base_addr" : PIM_FUNC_BASE_ADDR,
+            "sram_base_addr" : PIM_SRAM_BASE_ADDR,
+            "dram_base_addr" : PIM_DRAM_BASE_ADDR,
+            "reg_bound_addr" : PIM_REG_BOUND_ADDR
         })
         self.pimbackend.addParams( backend_params )
 

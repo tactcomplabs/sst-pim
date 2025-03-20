@@ -44,6 +44,10 @@ public:
     { "request_delay", "Constant delay to be added to requests with units (e.g., 1us)", "0ns" },
     { "pim_type", "1:test mode, 2:reserved, 3:tclpim", "1" },
     { "num_nodes", "Number of nodes", "1" },
+    { "func_base_addr", "Base memory address of function MMIO registers", "0x0E000000" },
+    { "sram_base_addr", "Base memory address of SRAM segment",             "0x0E000100" },
+    { "dram_base_addr", "Base memory address of DRAM segment",             "0x0E000500" },
+    { "reg_bound_addr", "Bound memory address of PIM region (exclusive)", "0x0E400500" }
   )
 
   SST_ELI_DOCUMENT_SUBCOMPONENT_SLOTS( { "backend", "Backend memory model", "SST::MemHierarchy::SimpleMemBackend" } )

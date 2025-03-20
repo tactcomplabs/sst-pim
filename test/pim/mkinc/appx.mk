@@ -7,8 +7,6 @@
 #
 # See LICENSE in the top level directory for licensing details
 #
-# PIM Type (0:none, 1:test, 2:reserved, 3:tclpim)
-PIM_TYPE?=3
 
 # SST Libs
 SSTOPTS += --add-lib-path=$(PROJHOME)/sstcomp/AppGen
@@ -42,7 +40,7 @@ all: $(TARGS)
 run: $(LOGS)
 
 # Test Specific Customization
-$(OUTDIR)/AppxTest/run.log:             OPTS = APP=AppxTest
+$(OUTDIR)/AppxTest/run.log:             OPTS = APP=AppxTest PIM_TYPE=1
 
 # The magical run command
 .PHONY: %.log
@@ -54,11 +52,10 @@ $(OUTDIR)/AppxTest/run.log:             OPTS = APP=AppxTest
 	@$(eval pdffile = $(basename $@).pdf)
 	@rm -f $(statf) $(dotfile) $(pdffile)
 	@echo Running $(basename $@)
-	$(OPTS) PIM_TYPE=$(PIM_TYPE) OUTPUT_DIRECTORY=$(@D) \
+	$(OPTS) OUTPUT_DIRECTORY=$(@D) \
  $(MPIOPTS) $(SST) $(SSTOPTS) \
  --output-json=$(@D)/rank.json $(SSTCFG) \
-
-# > $@ && (echo "pass" > $(statf); $(DOT2PDF))
+ > $@ && (echo "pass" > $(statf); $(DOT2PDF))
 
  # To run all even if they fail use this instead
  # > $@ && (echo "pass" > $(statf); $(DOT2PDF)) || echo "fail" > $(statf)
@@ -70,7 +67,6 @@ clean:
 help:
 	@echo make run
 	@echo make TLIST="test1 test2 ..."
-	@echo make DOT=1
 	@echo Valid TLIST selections are:
 	@echo $(ALL_TESTS)
 	@echo

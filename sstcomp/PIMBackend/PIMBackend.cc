@@ -81,6 +81,15 @@ PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( i
     delay_self_link = NULL;
   }
 
+  // Set up PIM memory segments
+  const unsigned funcBaseAddr = params.find<uint32_t>( "func_base_addr", DEFAULT_FUNC_BASE_ADDR );
+  const unsigned sramBaseAddr = params.find<uint32_t>( "sram_base_addr", DEFAULT_SRAM_BASE_ADDR );
+  const unsigned dramBaseAddr = params.find<uint32_t>( "dram_base_addr", DEFAULT_DRAM_BASE_ADDR );
+  const unsigned regBoundAddr = params.find<uint32_t>( "reg_bound_addr", DEFAULT_REG_BOUND_ADDR );
+  pimOutput.verbose( CALL_INFO, 3, 0, " pim_func_base_addr=0x%" PRIx32 " pim_sram_base_addr=0x%" PRIx32 " pim_dram_base_addr=0x%" PRIx32 " pim_reg_bound_addr=0x%" PRIx32 "\n",
+    funcBaseAddr, sramBaseAddr, dramBaseAddr, regBoundAddr );
+  PIMDecoder::setPIMSegments(funcBaseAddr,sramBaseAddr,dramBaseAddr,regBoundAddr);
+
   // Create the PIM
   pim_type            = params.find<uint32_t>( "pim_type", PIM_TYPE_TEST );
   num_nodes = params.find<unsigned>( "num_nodes", 0 );
@@ -88,7 +97,8 @@ PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( i
   node_id = params.find<unsigned>( "node_id", 0 );
 
   if( pim_type == PIM_TYPE_TEST ) {
-    pimOutput.fatal(CALL_INFO,-1,"pim_type PIM_TYPE_TEST is deprecated. Used PIM_TYPE_TCL instead\n");
+    pimsim = new TestPIM( node_id, &pimOutput );
+    pimOutput.verbose( CALL_INFO, 1, 0, "pim_type=%" PRIu32 " Node=%" PRIu32 " Using Test Mode\n", PIM_TYPE_TEST, node_id );
   } else if( pim_type == PIM_TYPE_TCL ) {
     pimsim = new TCLPIM( node_id, &pimOutput );
     pimOutput.verbose( CALL_INFO, 1, 0, "pim_type=%" PRIu32 " Node=%" PRIu32 " Using TCL PIM\n", PIM_TYPE_TCL, node_id );
@@ -105,7 +115,7 @@ PIMBackend::PIMBackend( ComponentId_t id, Params& params ) : SimpleMemBackend( i
 
   // TODO multiple controllers per memory
   uint64_t Loff = 0;
-  spdBase       = SRAM_BASE + Loff;
+  spdBase       = sramBaseAddr + Loff;
 }
 
 PIMBackend::~PIMBackend() {
@@ -147,8 +157,8 @@ bool PIMBackend::clock( Cycle_t cycle ) {
 
   if( pimsim && !initDRAMDone ) {
     initDRAMDone                 = true;
-    this->output->verbose(CALL_INFO, 3, 0, "Running initial PIM memory test\n");
-    // Write test data to SRAM base + 64
+    this->output->verbose(CALL_INFO, 3, 0, "Running initial scratch pad test\n");
+    // Write test data to scratch pad base + 64
     MemEventBase::dataVec wrData = { 0x10, 0x32, 0x54, 0x76, 0x98, 0xba, 0xdc, 0xfe };
     MemEvent*             evw    = new MemEvent( getName(), spdBase + 64, spdBase + 64, PIM_WRITE, wrData );
     evw->setFlags( MemEvent::F_NONCACHEABLE | MemEvent::F_NORESPONSE );
@@ -242,18 +252,14 @@ void PIMBackend::handleMMIOReadCompletion( SST::Event* ev ) {
   buffer.resize( mev->getSize() );
   pimsim->read( mev->getAddr(), mev->getSize(), buffer );
   mev->setPayload( buffer );
-  pimOutput.verbose(CALL_INFO,3,0,"MMIO read a=0x%" PRIx64 "d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
+  pimOutput.verbose(CALL_INFO,3,0,"MMIO read a=0x%" PRIx64 " d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
 }
 
 void PIMBackend::handleMMIOWriteCompletion( SST::Event* ev ) {
+  assert( pimsim );
   MemEvent* mev = static_cast<MemEvent*>( ev );
   // write event payload to PIM
   buffer        = mev->getPayload();
-  // TODO: Fix elf / linker / loader to not write initial values to MMIO ranges to avoid side effects
-  if (mev->getSize() !=8 ) {
-    pimOutput.verbose(CALL_INFO, 3, 0, "Warning: Dropping MMIO write to function handler with numBytes=%" PRIx32 "\n", mev->getSize() );
-    return;
-  }
   pimsim->write( mev->getAddr(), mev->getSize(), &buffer );
   pimOutput.verbose(CALL_INFO,3,0,"MMIO write a=0x%" PRIx64 " d[0]=%" PRId32 "\n", mev->getAddr(), (int)buffer[0]);
 }

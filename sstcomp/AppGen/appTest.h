@@ -16,14 +16,18 @@ namespace SST::AppGen {
 
 class AppTest : public App {
 public:
-  AppTest( AppLink* _link );
+  AppTest( AppLink* _link, uint64_t pimSramBaseAddr );
   virtual void theApp() override;
+private:
+  uint64_t pimSramBaseAddr;
 };  //AppTest
 
 class AppxTest : public AppTransactor {
 
 public:
-  AppxTest( ComponentId_t id, Params& params ) : AppTransactor( id, params ) {}
+  AppxTest( ComponentId_t id, Params& params ) : AppTransactor( id, params ) {
+    pimSramBaseAddr = params.find<uint64_t>("pim_sram_base_addr", DEFAULT_SRAM_BASE_ADDR);
+  }
 
   SST_ELI_REGISTER_SUBCOMPONENT(
     AppxTest,
@@ -34,12 +38,14 @@ public:
     SST::AppGen::AppTransactor
   )
 
-  SST_ELI_DOCUMENT_PARAMS( { "verbose", "Sets the verbosity of the output", "0" } )
+  SST_ELI_DOCUMENT_PARAMS( 
+    { "verbose", "Sets the verbosity of the output", "0" },
+    { "pim_sram_base_addr", "Base memory address of PIM SRAM segment", "0x0E000100" } )
 
   void spawnApp( AppLink* _appLink ) override {
     assert( appLink == nullptr );
     appLink = _appLink;
-    app     = new AppTest( appLink );
+    app     = new AppTest( appLink, pimSramBaseAddr );
     app->setOutput( out );
     int rc = app->spawn();
     if( rc ) {
@@ -48,6 +54,9 @@ public:
       out->verbose( CALL_INFO, 1, 0, "Successfully spawned application thread\n" );
     }
   }
+
+private:
+    uint64_t pimSramBaseAddr;
 
 };  //AppxTest
 

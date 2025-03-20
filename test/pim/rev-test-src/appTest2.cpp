@@ -1,5 +1,5 @@
 /*
- * noPIM.cpp
+ * apptest.cpp
  *
  * Copyright (C) 2017-2024 Tactical Computing Laboratories, LLC
  * All Rights Reserved
@@ -13,14 +13,26 @@
 #include <cstdlib>
 #include <cstring>
 
+// PIM definitions
 #include "revpim.h"
+
+// Select one and only one
+//#define DO_LOOP 1
+//#define DO_MEMCPY 1
+#define DO_PIM 1
 
 // Globals
 const int xfr_size = 256;  // dma transfer size in dwords
 uint64_t check_data[xfr_size];
+#if 1
+uint64_t sram[64] __attribute__((section(".pimsram")));
+uint64_t dram_dst[xfr_size] __attribute__((section(".pimdram")));
+uint64_t dram_src[xfr_size] __attribute__((section(".pimdram")));
+#else
 uint64_t sram[64];
 uint64_t dram_src[xfr_size];
 uint64_t dram_dst[xfr_size];
+#endif
 
 int configure() {
   size_t time1, time2;
@@ -35,6 +47,7 @@ int configure() {
   return time2 - time1;
 }
 
+#if DO_LOOP
 size_t theApp() {
   size_t time1, time2;
   REV_TIME( time1 );
@@ -43,6 +56,30 @@ size_t theApp() {
   REV_TIME( time2 );
   return time2 - time1;
 }
+#endif
+
+#if DO_MEMCPY
+size_t theApp() {
+  size_t time1, time2;
+  REV_TIME( time1 );
+  memcpy(dram_dst, dram_src, xfr_size*sizeof(uint64_t));
+  REV_TIME( time2 );
+  return time2 - time1;
+}
+#endif
+
+#if DO_PIM
+size_t theApp() {
+  size_t time1, time2;
+  REV_TIME( time1 );
+  revpim::init(PIM::FUNC_NUM::F1, dram_dst, dram_src, xfr_size*sizeof(uint64_t));
+  revpim::run(PIM::FUNC_NUM::F1);
+  revpim::finish(PIM::FUNC_NUM::F1); // blocking polling loop :(
+  REV_TIME( time2 );
+  return time2 - time1;
+}
+#endif
+
 
 size_t check() {
   size_t time1, time2;
@@ -65,7 +102,7 @@ size_t check() {
 }
 
 int main( int argc, char** argv ) {
-  printf("Starting nopim test\n");
+  printf("Starting appTest2\n");
   size_t time_config, time_exec, time_check;
 
   printf("\ndram_dst=0x%lx\ndram_src=0x%lx\nxfr_size=%d\n",
@@ -81,6 +118,6 @@ int main( int argc, char** argv ) {
 
   printf("Results:\n");
   printf("cycles: config=%d, exec=%d, check=%d\n", time_config, time_exec, time_check);
-  printf("nopim completed normally\n");
+  printf("appTest2 completed normally\n");
   return 0;
 }
