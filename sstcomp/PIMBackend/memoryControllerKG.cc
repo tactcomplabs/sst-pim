@@ -485,7 +485,7 @@ void MemControllerKG::handleEvent(SST::Event *event) {
   if (is_debug_event(meb)) {
     Debug(_L3_, "E: %-20" PRIu64 " %-20" PRIu64 " %-20s Event:New     (%s)\n",
           getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
-          getName().c_str(), meb->getVerboseString(dlevel).c_str());
+          getName().c_str(), meb->getVerboseString((int)dlevel).c_str());
   }
 
   Command cmd = meb->getCmd();
@@ -536,13 +536,13 @@ void MemControllerKG::handleEvent(SST::Event *event) {
     out.fatal(CALL_INFO, -1,
               "%s, Error: Received an event with a base address that does not "
               "map to this controller. Event: %s\n",
-              getName().c_str(), ev->getVerboseString(dlevel).c_str());
+              getName().c_str(), ev->getVerboseString((int)dlevel).c_str());
   }
   if (!region_.contains(ev->getAddr())) {
     out.fatal(CALL_INFO, -1,
               "%s, Error: Received an event with an address that does not map "
               "to this controller. Event: %s\n",
-              getName().c_str(), ev->getVerboseString(dlevel).c_str());
+              getName().c_str(), ev->getVerboseString((int)dlevel).c_str());
   }
 
   bool noncacheable = ev->queryFlag(MemEvent::F_NONCACHEABLE);
@@ -569,7 +569,7 @@ void MemControllerKG::handleEvent(SST::Event *event) {
         out.fatal(CALL_INFO, -1,
                   "%s: Error: Received an event for an address range that "
                   "does not map to this controller. Event: %s\n",
-                  getName().c_str(), ev->getVerboseString(dlevel).c_str());
+                  getName().c_str(), ev->getVerboseString((int)dlevel).c_str());
       }
     }
   } else if (ev->getSize() > 0) { // Contiguous address region, make sure last
@@ -578,7 +578,7 @@ void MemControllerKG::handleEvent(SST::Event *event) {
       out.fatal(CALL_INFO, -1,
                 "%s, Error: Received an event for an address range that does "
                 "not map to this controller. Event: %s\n",
-                getName().c_str(), ev->getVerboseString(dlevel).c_str());
+                getName().c_str(), ev->getVerboseString((int)dlevel).c_str());
   }
 #endif
 
@@ -806,7 +806,7 @@ void MemControllerKG::handleMemResponse(Event::id_type id, uint32_t flags) {
   if (is_debug_event(resp)) {
     Debug(_L3_, "E: %-20" PRIu64 " %-20" PRIu64 " %-20s Event:Resp    (%s)\n",
           getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
-          getName().c_str(), resp->getVerboseString(dlevel).c_str());
+          getName().c_str(), resp->getVerboseString((int)dlevel).c_str());
   }
 
   if (ev->queryFlag(PIMMemEvent::F_PIM)) {
@@ -1005,7 +1005,7 @@ void MemControllerKG::processInitEvent(MemEventInit *me) {
   } else if (Command::NULLCMD == me->getCmd()) {
     if (is_debug_event(me)) {
       Debug(_L9_, "Memory (%s) received init event: %s\n", getName().c_str(),
-            me->getVerboseString(dlevel).c_str());
+            me->getVerboseString((int)dlevel).c_str());
     }
   } else {
     out.debug(_L10_, "Memory received unexpected Init Command: %d\n",
