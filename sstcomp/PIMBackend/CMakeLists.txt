@@ -1,7 +1,7 @@
 #
 # sst-bench/sst/PIMBackend CMake
 #
-# Copyright (C) 2017-2024 Tactical Computing Laboratories, LLC
+# Copyright (C) 2017-2025 Tactical Computing Laboratories, LLC
 # All Rights Reserved
 # contact@tactcomplabs.com
 # See LICENSE in the top level directory for licensing details
@@ -9,28 +9,13 @@
 
 set(PIMBackendSrcs
   PIMBackend.cc
-  PIMBackend.h
   PIMDecoder.cc
-  PIMDecoder.h
   PIMMemController.cc
-  PIMMemController.h
   memoryControllerKG.cc
-  memoryControllerKG.h
   pim.cc
-  pim.h
   tclpim.cc
-  tclpim.h
   tclpim_functions.cc
-  tclpim_functions.h
   userpim_functions.cc
-  userpim_functions.h
-  memHierarchy/cacheListener.h
-  memHierarchy/memEvent.h
-  memHierarchy/memEventBase.h
-  memHierarchy/memEventCustom.h
-  memHierarchy/memLink.h
-  memHierarchy/memNIC.h
-  memHierarchy/util.h
 )
 
 # some includes needed from sst elements
@@ -46,7 +31,7 @@ include_directories(SST_ELEMENTS_INC ${SST_ELEMENTS_INCLUDE_DIR})
 message(STATUS "SST_ELEMENTS_INC = ${SST_ELEMENTS_INCLUDE_DIR}")
 
 add_library(PIM SHARED ${PIMBackendSrcs})
-target_include_directories(PIM  
+target_include_directories(PIM
   PUBLIC ${SST_INSTALL_DIR}/include
   PUBLIC memHierarchy)
 install(TARGETS PIM DESTINATION ${CMAKE_CURRENT_SOURCE_DIR})

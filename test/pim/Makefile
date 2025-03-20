@@ -1,7 +1,7 @@
 #
 # Makefile pim
 #
-# Copyright (C) 2017-2024 Tactical Computing Laboratories, LLC
+# Copyright (C) 2017-2025 Tactical Computing Laboratories, LLC
 # All Rights Reserved
 # contact@tactcomplabs.com
 #
@@ -15,9 +15,9 @@
 PROJHOME ?= $(realpath ../..)
 
 # PIM Compatible REV
-# PIM_REV_HOME ?= $(HOME)/work/rev-pim
-ifndef PIM_REV_HOME
- $(error PIM_REV_HOME must be set to a PIM compatable REV)
+# REVHOME ?= $(HOME)/work/rev-pim
+ifndef REVHOME
+ $(error REVHOME must be set to a PIM compatable REV)
 endif
 
 # SST

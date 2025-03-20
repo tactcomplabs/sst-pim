@@ -1,7 +1,7 @@
 #
 # rev.mk
 #
-# Copyright (C) 2017-2024 Tactical Computing Laboratories, LLC
+# Copyright (C) 2017-2025 Tactical Computing Laboratories, LLC
 # All Rights Reserved
 # contact@tactcomplabs.com
 #
@@ -12,8 +12,8 @@
 PIM_TYPE?=3
 
 # REV paths
-REVLIBPATH ?= $(PIM_REV_HOME)/build/src
-REVPRINT ?= $(PIM_REV_HOME)/scripts/rev-print.py
+REVLIBPATH ?= $(REVHOME)/build/src
+REVPRINT ?= $(REVHOME)/scripts/rev-print.py
 
 # Test source code
 SRCDIR = ./rev-test-src
@@ -28,7 +28,7 @@ OUTDIR = rev-output
 PIM_TESTS += $(notdir $(basename $(wildcard $(SRCDIR)/*.cc)))
 
 # PIM MPI tests
-# PIM_MPI_TESTS += 
+# PIM_MPI_TESTS +=
 
 ifndef MPI_RANKS
   ALL_TESTS = $(PIM_TESTS)
@@ -61,8 +61,8 @@ RVOBJDUMP=riscv64-unknown-elf-objdump
 OBJDUMP   = ${RVOBJDUMP} --source -l -dC -Mno-aliases
 
 # Rev headers
-INCLUDE  := -I$(PIM_REV_HOME)/common/syscalls
-INCLUDE  += -I$(PIM_REV_HOME)/test/include
+INCLUDE  := -I$(REVHOME)/common/syscalls
+INCLUDE  += -I$(REVHOME)/test/include
 
 # PIM headers
 INCLUDE  += -I$(PROJHOME)/sstcomp/include

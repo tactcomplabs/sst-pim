@@ -16,10 +16,9 @@
 #ifndef _H_SST_APPGEN_SINGLE_STREAM_GEN
 #define _H_SST_APPGEN_SINGLE_STREAM_GEN
 
+// clang-format off
 #include "mirandaGenerator_kg.h"
-#include <sst/core/output.h>
-
-#include <queue>
+// clang-format on
 
 namespace SST {
 namespace AppGen {
@@ -27,30 +26,26 @@ namespace AppGen {
 class SingleStreamGenerator_KG : public RequestGenerator {
 
 public:
-  SingleStreamGenerator_KG( ComponentId_t id, Params& params );
-  void build( Params& params );
+  SingleStreamGenerator_KG(ComponentId_t id, Params &params);
+  void build(Params &params);
   ~SingleStreamGenerator_KG();
-  void generate( MirandaRequestQueue<GeneratorRequest*>* q );
-  bool isFinished();
-  void completed();
+  void generate(MirandaRequestQueue<GeneratorRequest *> *q) override;
+  bool isFinished() override;
+  void completed() override;
 
   SST_ELI_REGISTER_SUBCOMPONENT(
-    SingleStreamGenerator_KG,
-    "AppGen",
-    "SingleStreamGenerator_KG",
-    SST_ELI_ELEMENT_VERSION( 1, 0, 0 ),
-    "Creates a single ordered stream of accesses to/from memory",
-    SST::AppGen::RequestGenerator
-  )
+      SingleStreamGenerator_KG, "AppGen", "SingleStreamGenerator_KG",
+      SST_ELI_ELEMENT_VERSION(1, 0, 0),
+      "Creates a single ordered stream of accesses to/from memory",
+      SST::AppGen::RequestGenerator)
 
   SST_ELI_DOCUMENT_PARAMS(
-    { "verbose", "Sets the verbosity of the output", "0" },
-    { "count", "Total number of requests", "1000" },
-    { "length", "Sets the length of the request", "8" },
-    { "startat", "Sets the start address of the array", "0" },
-    { "max_address", "Maximum address allowed for generation", "524288" },
-    { "memOp", "All reqeusts will be of this type, [Read/Write]", "Read" },
-  )
+      {"verbose", "Sets the verbosity of the output", "0"},
+      {"count", "Total number of requests", "1000"},
+      {"length", "Sets the length of the request", "8"},
+      {"startat", "Sets the start address of the array", "0"},
+      {"max_address", "Maximum address allowed for generation", "524288"},
+      {"memOp", "All reqeusts will be of this type, [Read/Write]", "Read"}, )
 
 private:
   uint64_t reqLength;
@@ -59,11 +54,11 @@ private:
   uint64_t nextAddr;
   uint64_t startAddr;
 
-  Output*      out;
+  Output *out;
   ReqOperation memOp;
 };
 
-}  // namespace AppGen
-}  // namespace SST
+} // namespace AppGen
+} // namespace SST
 
-#endif  //_H_SST_APPGEN_SINGLE_STREAM_GEN
+#endif //_H_SST_APPGEN_SINGLE_STREAM_GEN

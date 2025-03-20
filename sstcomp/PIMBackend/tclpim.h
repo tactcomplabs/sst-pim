@@ -1,5 +1,5 @@
 //
-// Copyright (C) 2017-2024 Tactical Computing Laboratories, LLC
+// Copyright (C) 2017-2025 Tactical Computing Laboratories, LLC
 // All Rights Reserved
 // contact@tactcomplabs.com
 // See LICENSE in the top level directory for licensing details
@@ -16,30 +16,30 @@ class FSM;
 
 class TCLPIM : public PIM {
 public:
-  TCLPIM( uint64_t node, SST::Output* o );
+  TCLPIM(uint64_t node, SST::Output *o);
   virtual ~TCLPIM();
-  void     setup() override {};
-  bool     clock( SST::Cycle_t ) override;
+  void setup() override {};
+  bool clock(SST::Cycle_t) override;
   uint64_t getCycle() override;
-  bool     isMMIO( uint64_t addr ) override;
-  PIMDecodeInfo  getDecodeInfo( uint64_t addr);
+  bool isMMIO(uint64_t addr) override;
+  PIMDecodeInfo getDecodeInfo(uint64_t addr);
   // IO access functions
-  void read( Addr, uint64_t numBytes, std::vector<uint8_t>& ) override;
-  void write( Addr, uint64_t numBytes, std::vector<uint8_t>* ) override;
+  void read(Addr, unsigned numBytes, std::vector<uint8_t> &) override;
+  void write(Addr, unsigned numBytes, std::vector<uint8_t> *) override;
 
   // Primary functional state machine
   class FuncState {
   public:
-    FuncState( TCLPIM* p, FUNC_NUM fn, std::shared_ptr<FSM> fsm);
+    FuncState(TCLPIM *p, FUNC_NUM fn, std::shared_ptr<FSM> fsm);
     void setFSM(std::shared_ptr<FSM> fsm);
     void writeFSM(FUNC_CMD cmd);
     void writeFSM(uint64_t d);
     uint64_t readFSM();
     bool running();
     std::shared_ptr<FSM> exec();
-    
+
   private:
-    TCLPIM* parent;
+    TCLPIM *parent;
     FUNC_NUM fnum;
     std::shared_ptr<FSM> exec_ = nullptr;
     uint64_t params[NUM_FUNC_PARAMS] = {0};
@@ -50,30 +50,30 @@ public:
   }; // class FuncState
 
 private:
-  uint64_t   id;
-  PIMDecoder* pimDecoder;
-  uint64_t   cycle = 0;
+  uint64_t id;
+  PIMDecoder *pimDecoder;
+  uint64_t cycle = 0;
 
   // memory mapped IO
   std::vector<std::shared_ptr<PIMMemSegment>> PIMSegs;
-  uint64_t             sramArray[SRAM_SIZE/sizeof(uint64_t)] = { 0 };
+  uint64_t sramArray[SRAM_SIZE / sizeof(uint64_t)] = {0};
   std::deque<uint64_t> ctl_ops;
-  void                 function_write( uint64_t data );
-  uint64_t             decodeFuncNum( uint64_t address, unsigned numBytes );
-  std::map< FUNC_NUM, shared_ptr<FuncState>> funcState;
+  void function_write(uint64_t data);
+  unsigned decodeFuncNum(uint64_t address, unsigned numBytes);
+  std::map<FUNC_NUM, shared_ptr<FuncState>> funcState;
 
-};  //class TCLPIM
+}; // class TCLPIM
 
 class FSM {
 public:
-  FSM( TCLPIM* p ) : parent(p) {};
+  FSM(TCLPIM *p) : parent(p) {};
   virtual ~FSM() {};
-  virtual void start( uint64_t params[NUM_FUNC_PARAMS] ) = 0;
-  virtual bool clock() = 0;  // return true when done
+  virtual void start(uint64_t params[NUM_FUNC_PARAMS]) = 0;
+  virtual bool clock() = 0; // return true when done
 
 protected:
-  TCLPIM* parent;
-}; //class FSM
+  TCLPIM *parent;
+}; // class FSM
 
 } // namespace SST::PIM
 

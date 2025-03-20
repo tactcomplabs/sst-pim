@@ -1,7 +1,7 @@
 #
 # sst-bench/sst/AppGen CMake
 #
-# Copyright (C) 2017-2024 Tactical Computing Laboratories, LLC
+# Copyright (C) 2017-2025 Tactical Computing Laboratories, LLC
 # All Rights Reserved
 # contact@tactcomplabs.com
 # See LICENSE in the top level directory for licensing details
@@ -9,19 +9,10 @@
 
 set(AppGenSrcs
   app.cc
-  app.h
-  appLink.h
   appTest.cc
-  appTest.h
   appTransactor.cc
-  appTransactor.h
   mirandaCPU_kg.cc
-  mirandaCPU_kg.h
-  mirandaEvent_kg.h
-  mirandaGenerator_kg.h
-  mirandaMemMgr_kg.h
   singlestream_kg.cc
-  singlestream_kg.h
 )
 
 add_library(AppGen SHARED ${AppGenSrcs})
