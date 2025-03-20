@@ -11,9 +11,15 @@ Tested on the following platforms
 - Redhat 4.18.0-477.10.1.el8_8.x86_64 #1 SMP x86_64
 - Ubuntu 5.15.0-122-generic #132-Ubuntu SMP  x86_64
 
+## SST Support
+
+Important!  This repository requires `sst-core v14.1.0` and `sst-elements v14.1.0`.
+Due to customization of certain elements, these and only these versions are required.
+
 ## Getting Started
 
-Checkout and build the 'fastprint' branch of the REV CPU.
+Checkout and build the 'devel' branch of the REV CPU.
+The last tested compatable version of REV was git SHA `1e145cb`
 
 ```
 export REVHOME=<path to REV>
