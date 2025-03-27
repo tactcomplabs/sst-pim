@@ -28,6 +28,23 @@ private:
   uint64_t scalar = 0;
 }; // class MulVecByScalar
 
+class DotProduct : public FSM {
+public:
+  DotProduct(TCLPIM *p);
+  void start(uint64_t params[NUM_FUNC_PARAMS]) override;
+  bool clock() override;
+
+private:
+  enum DMA_STATE { IDLE, READ1, READ2, WRITE, WAITING, DONE };
+  DMA_STATE dma_state = DMA_STATE::IDLE;
+  unsigned total_words = 0;
+  unsigned word_counter = 0;
+  uint64_t sum = 0;
+  uint64_t src1 = 0;
+  uint64_t src2 = 0;
+  uint64_t dst = 0;
+}; // class DotProduct
+
 } // namespace SST::PIM
 
 #endif //_SST_PIMBACKEND_USER_PIM_FUNCTIONS_

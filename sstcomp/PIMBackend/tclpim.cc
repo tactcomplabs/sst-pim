@@ -28,6 +28,9 @@ TCLPIM::TCLPIM(uint64_t node, SST::Output *o) : PIM(o) {
   // User function 5: MulVectByScalar
   funcState[FUNC_NUM::U5] = std::make_unique<FuncState>(
       this, FUNC_NUM::U5, std::make_unique<MulVecByScalar>(this));
+  // User function 6: DotProduct
+  funcState[FUNC_NUM::U6] = std::make_unique<FuncState>(
+      this, FUNC_NUM::U6, std::make_unique<DotProduct>(this));
 }
 
 TCLPIM::~TCLPIM() {
