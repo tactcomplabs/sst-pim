@@ -43,6 +43,9 @@ private:
   uint64_t src1 = 0;
   uint64_t src2 = 0;
   uint64_t dst = 0;
+  // below used for task time statistic
+  uint64_t task_start;
+  // uint64_t task_end;
 }; // class DotProduct
 
 } // namespace SST::PIM

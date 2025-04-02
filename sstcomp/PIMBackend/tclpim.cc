@@ -33,6 +33,30 @@ TCLPIM::TCLPIM(uint64_t node, SST::Output *o) : PIM(o) {
       this, FUNC_NUM::U6, std::make_unique<DotProduct>(this));
 }
 
+TCLPIM::TCLPIM(uint64_t node, PIMBackend *pimBackend, SST::Output *o) : PIM(o) {
+  // simulator defined identifier
+  id = (uint64_t(PIM_TYPE_TCL) << 56) | (node << 12);
+  sramArray[0] = id;
+  output->verbose(CALL_INFO, 1, 0,
+                  "Creating TCLPIM node=%" PRId64 " id=0x%" PRIx64 "\n", node,
+                  id);
+  // mmio decoder
+  pimDecoder = new PIMDecoder(node);
+  // backend ptr to carry statistics down from the component
+  this->pimBackend = pimBackend;
+
+  // PIM FSM Assignments
+  // Built-in function 1: MemCopy
+  funcState[FUNC_NUM::F1] = std::make_unique<FuncState>(
+      this, FUNC_NUM::F1, std::make_unique<MemCopy>(this));
+  // User function 5: MulVectByScalar
+  funcState[FUNC_NUM::U5] = std::make_unique<FuncState>(
+      this, FUNC_NUM::U5, std::make_unique<MulVecByScalar>(this));
+  // User function 6: DotProduct
+  funcState[FUNC_NUM::U6] = std::make_unique<FuncState>(
+      this, FUNC_NUM::U6, std::make_unique<DotProduct>(this));
+}
+
 TCLPIM::~TCLPIM() {
   if (pimDecoder)
     delete pimDecoder;

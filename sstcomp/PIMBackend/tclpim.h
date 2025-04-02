@@ -17,12 +17,14 @@ class FSM;
 class TCLPIM : public PIM {
 public:
   TCLPIM(uint64_t node, SST::Output *o);
+  TCLPIM(uint64_t node, PIMBackend *pimBackend, SST::Output *o);
   virtual ~TCLPIM();
   void setup() override {};
   bool clock(SST::Cycle_t) override;
   uint64_t getCycle() override;
   bool isMMIO(uint64_t addr) override;
   PIMDecodeInfo getDecodeInfo(uint64_t addr);
+  PIMBackend *getPimBackend() { return pimBackend; }
   // IO access functions
   void read(Addr, unsigned numBytes, std::vector<uint8_t> &) override;
   void write(Addr, unsigned numBytes, std::vector<uint8_t> *) override;
@@ -52,6 +54,7 @@ public:
 private:
   uint64_t id;
   PIMDecoder *pimDecoder;
+  PIMBackend *pimBackend;
   uint64_t cycle = 0;
 
   // memory mapped IO

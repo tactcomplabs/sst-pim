@@ -45,6 +45,13 @@ public:
   SST_ELI_DOCUMENT_SUBCOMPONENT_SLOTS({"backend", "Backend memory model",
                                        "SST::MemHierarchy::SimpleMemBackend"})
 
+  SST_ELI_DOCUMENT_STATISTICS(
+      {"bytes_read", "Total count of bytes read through the PIM device", "B",
+       5},
+      {"bytes_written", "Total count of bytes written through the PIM device",
+       "B", 5},
+      {"task_time", "Total count of cycles spent on PIM tasks", "cycles", 5})
+
   /* Begin class definition */
   PIMBackend();
   PIMBackend(ComponentId_t id, Params &params);
@@ -55,6 +62,8 @@ public:
   std::string getBackendConvertorType() override {
     return "memHierarchy.simpleMemBackendConvertor";
   }
+
+  Statistic<uint64_t> *getTaskTime() { return taskTime; }
 
   // PIM Callbacks for memory controller event injection from PIM and response
   // to PIM. Map to MemController::handleEvent
@@ -103,6 +112,10 @@ protected:
 private:
   unsigned num_nodes = 0; // Important: Set by configuration to >0
   void handleMemReponse(ReqId id);
+
+  Statistic<uint64_t> *bytesRead;
+  Statistic<uint64_t> *bytesWritten;
+  Statistic<uint64_t> *taskTime;
 
   struct Req {
     Req(ReqId id, Addr addr, bool isWrite, unsigned numBytes)

@@ -53,6 +53,9 @@ PIMBackend::PIMBackend(ComponentId_t id, Params &params)
   const unsigned Verbosity = params.find<unsigned>("verbose", 0);
   pimOutput.init("PIMBackend[" + getName() + ":@p:@t]: ", Verbosity, 0,
                  SST::Output::STDOUT);
+  bytesRead = registerStatistic<uint64_t>("bytes_read");
+  bytesWritten = registerStatistic<uint64_t>("bytes_written");
+  taskTime = registerStatistic<uint64_t>("task_time");
 
   // Create our backend
   // TODO check
@@ -92,7 +95,9 @@ PIMBackend::PIMBackend(ComponentId_t id, Params &params)
         CALL_INFO, -1,
         "pim_type PIM_TYPE_TEST is deprecated. Used PIM_TYPE_TCL instead\n");
   } else if (pim_type == PIM_TYPE_TCL) {
-    pimsim = new TCLPIM(node_id, &pimOutput);
+    // pimsim = new TCLPIM(node_id, &pimOutput);
+    //  add pimBackend ptr to carry stats thru
+    pimsim = new TCLPIM(node_id, this, &pimOutput);
     pimOutput.verbose(CALL_INFO, 1, 0,
                       "pim_type=%" PRIu32 " Node=%" PRIu32 " Using TCL PIM\n",
                       PIM_TYPE_TCL, node_id);
@@ -191,7 +196,15 @@ void PIMBackend::issueDRAMRequest(
   kgdbg::spinner("PIMREQ_SPINNER");
 
   MemEvent *ev;
-  Command cmd = isWrite ? PIM_WRITE : PIM_READ;
+  // Command cmd = isWrite ? PIM_WRITE : PIM_READ;
+  Command cmd;
+  if (isWrite) {
+    bytesWritten->addData(vec->size());
+    cmd = PIM_WRITE;
+  } else {
+    bytesRead->addData(vec->size());
+    cmd = PIM_READ;
+  }
   ev = new MemEvent(getComponentName(), a,
                     a, // base address matches address for noncacheable accesses
                     cmd, *vec);
