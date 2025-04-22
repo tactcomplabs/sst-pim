@@ -106,7 +106,7 @@ void DotProduct::start(uint64_t params[NUM_FUNC_PARAMS]) {
   dma_state = DMA_STATE::READ1;
   parent->output->verbose(CALL_INFO, 3, 0,
                           "DotProduct: src1=0x%" PRIx64 " src2=0x%" PRIx64
-                          "dst=%" PRId64 " total_words=%" PRId32 "\n",
+                          " dst=%" PRId64 " total_words=%" PRId32 "\n",
                           src1, src2, dst, total_words);
 }
 
@@ -120,7 +120,8 @@ bool DotProduct::clock() {
   const bool READ = false;
   if (dma_state == DMA_STATE::READ1) {
     task_start = parent->getCycle();
-    word_counter = word_counter - words;
+    // only reduce word counter after read2?
+    // word_counter = word_counter - words;
     parent->output->verbose(CALL_INFO, 3, 0,
                             "DotProduct: word_counter=%" PRId32
                             " words=%" PRId32 " bytes=%" PRId32
@@ -132,9 +133,11 @@ bool DotProduct::clock() {
           // parent->output->verbose(CALL_INFO, 3, 0, "d
           // size=%zu\n", d.size());
           assert(parent->buffer.size() == d.size());
-          for (size_t i = 0; i < d.size(); i += 16) {
-            for (size_t j = 0; j < 4; j++) {
+          for (size_t i = 0; i < d.size(); i += 8) {
+            for (size_t j = 0; j < 8; j++) {
               parent->buffer[i + j] = d[i + j];
+              parent->output->verbose(CALL_INFO, 3, 0,
+                                      "DotProduct: R1 i=%zu j=%zu\n", i, j);
             }
           }
           dma_state = DMA_STATE::READ2;
@@ -153,24 +156,26 @@ bool DotProduct::clock() {
     if (word_counter > 0) {
       parent->m_issueDRAMRequest(
           src2, &parent->buffer, READ, [this](const MemEventBase::dataVec &d) {
-            // parent->output->verbose(CALL_INFO, 3, 0, "DotProduct: d size=%zu
-            // parent buffer size=%zu\n",
-            //                         d.size(), parent->buffer.size());
+            parent->output->verbose(CALL_INFO, 3, 0, "DotProduct: d size=%zu\
+             parent buffer size=%zu\n",
+                                    d.size(), parent->buffer.size());
             assert(parent->buffer.size() == d.size());
-            for (size_t i = 0; i < d.size(); i += 16) {
-              uint32_t r2_data = 0;
-              uint32_t r1_data = 0;
+            for (size_t i = 0; i < d.size(); i += 8) {
+              uint64_t r2_data = 0;
+              uint64_t r1_data = 0;
               uint8_t *pr1 = (uint8_t *)(&r1_data);
               uint8_t *pr2 = (uint8_t *)(&r2_data);
-              for (size_t j = 0; j < 4; j++) {
+              for (size_t j = 0; j < 8; j++) {
                 pr2[j] = d[i + j];
                 pr1[j] = parent->buffer[i + j];
+                parent->output->verbose(
+                    CALL_INFO, 3, 0, "DotProduct: R2 WC>0 i=%zu j=%zu\n", i, j);
               }
               sum += r1_data * r2_data;
               parent->output->verbose(CALL_INFO, 3, 0,
                                       "DotProduct: checkpoint sum=0x%" PRIx64
-                                      "r1_data=0x%" PRIx32 " r2_data=0x%" PRIx32
-                                      "\n",
+                                      " r1_data=0x%" PRIx64
+                                      " r2_data=0x%" PRIx64 "\n",
                                       sum, r1_data, r2_data);
             }
             dma_state = DMA_STATE::READ1;
@@ -182,20 +187,22 @@ bool DotProduct::clock() {
             // parent buffer size=%zu\n",
             //                         d.size(), parent->buffer.size());
             assert(parent->buffer.size() == d.size());
-            for (size_t i = 0; i < d.size(); i += 16) {
-              uint32_t r2_data = 0;
-              uint32_t r1_data = 0;
+            for (size_t i = 0; i < d.size(); i += 8) {
+              uint64_t r2_data = 0;
+              uint64_t r1_data = 0;
               uint8_t *pr1 = (uint8_t *)(&r1_data);
               uint8_t *pr2 = (uint8_t *)(&r2_data);
-              for (size_t j = 0; j < 4; j++) {
+              for (size_t j = 0; j < 8; j++) {
                 pr2[j] = d[i + j];
                 pr1[j] = parent->buffer[i + j];
+                parent->output->verbose(
+                    CALL_INFO, 3, 0, "DotProduct: R2 WC<0 i=%zu j=%zu\n", i, j);
               }
               sum += r1_data * r2_data;
               parent->output->verbose(CALL_INFO, 3, 0,
                                       "DotProduct: checkpoint sum=0x%" PRIx64
-                                      "r1_data=0x%" PRIx32 " r2_data=0x%" PRIx32
-                                      "\n",
+                                      " r1_data=0x%" PRIx64
+                                      " r2_data=0x%" PRIx64 "\n",
                                       sum, r1_data, r2_data);
             }
             uint8_t *psum = (uint8_t *)(&sum);
