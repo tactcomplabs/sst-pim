@@ -153,6 +153,7 @@ bool DotProduct::clock() {
                             " words=%" PRId32 " bytes=%" PRId32
                             " buffer size=%zu\n",
                             word_counter, words, bytes, parent->buffer.size());
+    task_start = parent->getCycle();
     if (word_counter > 0) {
       parent->m_issueDRAMRequest(
           src2, &parent->buffer, READ, [this](const MemEventBase::dataVec &d) {
@@ -178,6 +179,8 @@ bool DotProduct::clock() {
                                       " r2_data=0x%" PRIx64 "\n",
                                       sum, r1_data, r2_data);
             }
+            parent->getPimBackend()->getTaskTime()->addData(parent->getCycle() -
+                                                            task_start);
             dma_state = DMA_STATE::READ1;
           });
     } else {
@@ -209,6 +212,8 @@ bool DotProduct::clock() {
             for (size_t j = 0; j < 8; j++) {
               parent->buffer[j] = psum[j];
             }
+            parent->getPimBackend()->getTaskTime()->addData(parent->getCycle() -
+                                                            task_start);
             dma_state = DMA_STATE::WRITE;
           });
     }
