@@ -1,8 +1,8 @@
-// Copyright 2009-2024 NTESS. Under the terms
+// Copyright 2009-2025 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2024, NTESS
+// Copyright (c) 2009-2025, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -19,33 +19,13 @@
 #include "kgdbg.h"
 // clang-format on
 
-#define NO_STRING_DEFINED "N/A"
+#define SST_MEMH_NO_STRING_DEFINED "N/A"
 
 using namespace std;
 using namespace SST;
 using namespace SST::MemHierarchy;
 
-// Debug macros
-#if 0
- // TODO these conflict with those in util.h
-#ifdef __SST_DEBUG_OUTPUT__
-#define is_debug_addr(addr)                                                    \
-  (DEBUG_ADDR.empty() || DEBUG_ADDR.find(addr) != DEBUG_ADDR.end())
-#define is_debug_event(ev) (DEBUG_ADDR.empty() || ev->doDebug(DEBUG_ADDR))
-#define Debug(level, fmt, ...) dbg.debug(level, fmt, ##__VA_ARGS__)
-#else
-#define is_debug_addr(addr) false
-#define is_debug_event(ev) false
-#define Debug(level, fmt, ...)
-#endif
-#else
-#ifdef __SST_DEBUG_OUTPUT__
-#define Debug(level, fmt, ...) dbg.debug(level, fmt, ##__VA_ARGS__)
-#else
-#define Debug(level, fmt, ...)
-#endif
-#endif
-
+/* Debug macros included from util.h */
 /*
  *  Debug levels:
  *  3  - event receive/response
@@ -62,7 +42,7 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
 
   dlevel = params.find<unsigned>("debug_level", 0);
 
-  fixupParam(params, "backend", "backendConvertor.backend");
+  fixupParams(params, "backend", "backendConvertor.backend");
   fixupParams(params, "backend.", "backendConvertor.backend.");
   fixupParams(params, "request_width", "backendConvertor.request_width");
   fixupParams(params, "max_requests_per_cycle",
@@ -75,8 +55,22 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
   dbg.init("", dlevel, 0,
            (Output::output_location_t)params.find<int>("debug", 0));
 
-  bool initBacking = params.find<bool>("initBacking", false);
+  checkpointDir_ = params.find<std::string>("checkpointDir", "");
+  auto tmp = params.find<std::string>("checkpoint", "");
+  if (!tmp.empty()) {
+    assert(!checkpointDir_.empty());
+    if (0 == tmp.compare("load")) {
+      checkpoint_ = CHECKPOINT_LOAD;
+    } else if (0 == tmp.compare("save")) {
+      checkpoint_ = CHECKPOINT_SAVE;
+    } else {
+      assert(0);
+    }
+  } else {
+    checkpoint_ = NO_CHECKPOINT;
+  }
 
+  bool initBacking = params.find<bool>("backing_init_zero", false);
   // Debug address
   std::vector<Addr> addrArr;
   params.find_array<Addr>("debug_addr", addrArr);
@@ -91,36 +85,6 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
   // Check for deprecated parameters and warn/fatal
   // Currently deprecated - network_num_vc, statistic, direct_link
   bool found;
-  params.find<int>("statistics", 0, found);
-  if (found) {
-    out.output(
-        "%s, **WARNING** ** Found deprecated parameter: statistics **  "
-        "memHierarchy statistics have been moved to the Statistics API. Please "
-        "see sst-info to view available statistics and update your input deck "
-        "accordingly.\nNO statistics will be printed otherwise! Remove this "
-        "parameter from your deck to eliminate this message.\n",
-        getName().c_str());
-  }
-
-  params.find<int>("network_num_vc", 0, found);
-  if (found) {
-    out.output(
-        "%s, ** Found deprecated parameter: network_num_vc ** MemHierarchy "
-        "does "
-        "not use multiple virtual channels. Remove this parameter from your "
-        "input deck to eliminate this message.\n",
-        getName().c_str());
-  }
-
-  params.find<int>("direct_link", 0, found);
-  if (found) {
-    assert(false);
-    out.output("%s, ** Found deprecated parameter: direct_link ** The value "
-               "of this parameter is now auto-detected by the link "
-               "configuration in your input deck. Remove this parameter from "
-               "your input deck to eliminate this message.\n",
-               getName().c_str());
-  }
 
   /* Clock Handler */
   std::string clockfreq = params.find<std::string>("clock");
@@ -128,14 +92,17 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
   if (!(clock_ua.hasUnits("Hz") || clock_ua.hasUnits("s")) ||
       clock_ua.getRoundedValue() <= 0) {
     out.fatal(CALL_INFO, -1,
-              "%s, Error - Invalid param: clock. Must have units of Hz or s "
-              "and be > 0. (SI prefixes ok). You specified '%s'\n",
+              "%s, ERROR - Invalid parameter: 'clock'. Must have units of Hz "
+              "or s and be > 0. (SI prefixes ok). You specified '%s'\n",
               getName().c_str(), clockfreq.c_str());
   }
+
   clockHandler_ =
-      new Clock::Handler<MemControllerKG>(this, &MemControllerKG::clock);
+      new Clock::Handler2<MemControllerKG, &MemControllerKG::clock>(this);
   clockTimeBase_ = registerClock(clockfreq, clockHandler_);
   clockOn_ = true;
+
+  backing_outscreen_ = params.find<bool>("backing_out_screen", false);
 
   string link_lat = params.find<std::string>("direct_link_latency", "10 ns");
 
@@ -146,9 +113,9 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
    * loads the compatible convertor
    *
    */
-  // MemBackend * memory = loadUserSubComponent<MemBackend>("backend");
-  memory_ = loadUserSubComponent<MemBackend>("backend");
-  if (!memory_) { /* Try to load from our parameters (legacy mode 1) */
+
+  MemBackend *memory = loadUserSubComponent<MemBackend>("backend");
+  if (!memory) { /* Try to load from our parameters (legacy mode 1) */
     /* Check if there's an error with the subcomponent the user specified */
     SubComponentSlotInfo *info = getSubComponentSlotInfo("backend");
     if (info && info->isPopulated(0)) {
@@ -158,11 +125,10 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
                 "with the SST core.\n",
                 getName().c_str());
     } else {
-      out.output(
-          "%s, WARNING: loading backend in legacy mode (from parameter set). "
-          "Instead, load backend into this controller's 'backend' slot via "
-          "ctrl.setSubComponent() in configuration.\n",
-          getName().c_str());
+      out.output("%s, WARNING: Loaded backend in legacy mode (from parameter "
+                 "set). Instead, load backend into this controller's 'backend' "
+                 "slot via ctrl.setSubComponent() in configuration.\n",
+                 getName().c_str());
     }
     Params tmpParams = params.get_scoped_params("backendConvertor.backend");
     std::string name = params.find<std::string>("backendConvertor.backend",
@@ -172,9 +138,9 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
         ComponentInfo::INSERT_STATS | ComponentInfo::SHARE_PORTS, tmpParams);
     if (!memory_) {
       out.fatal(CALL_INFO, -1,
-                "%s, Error: unable to load backend '%s'. Use "
-                "setSubComponent() on this controller to specify backend in "
-                "your input configuration; check for valid backend name.\n",
+                "%s, ERROR: Unable to load backend '%s'. Use setSubComponent() "
+                "on this controller to specify backend in your input "
+                "configuration; check for valid backend name.\n",
                 getName().c_str(), name.c_str());
     }
   }
@@ -186,7 +152,7 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
       tmpParams, memory_, requestWidth);
 
   if (memBackendConvertor_ == nullptr) {
-    out.fatal(CALL_INFO, -1, "%s, Error - unable to load MemBackendConvertor.",
+    out.fatal(CALL_INFO, -1, "%s, ERROR: Unable to load MemBackendConvertor.",
               getName().c_str());
   }
 
@@ -197,11 +163,11 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
       std::bind(&MemControllerKG::turnClockOn, this));
   memSize_ = memBackendConvertor_->getMemSize();
   if (memSize_ == 0)
-    out.fatal(
-        CALL_INFO, -1,
-        "%s, Error - tried to get memory size from backend but size is 0B. "
-        "Either backend is missing 'mem_size' parameter or value is invalid.\n",
-        getName().c_str());
+    out.fatal(CALL_INFO, -1,
+              "%s, ERROR: Tried to get memory size from backend but size is "
+              "0B. Either backend is missing a 'mem_size' parameter or value "
+              "is invalid.\n",
+              getName().c_str());
 
   // Load listeners (profilers/tracers/etc.)
   SubComponentSlotInfo *lists = getSubComponentSlotInfo(
@@ -250,18 +216,6 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
   string ilStep = params.find<std::string>("interleave_step", "0B", found);
   gotRegion |= found;
 
-  /* TODO remove this warning in SST 13 */
-  if (!gotRegion) {
-    out.output("%s, WARNING: Memories no longer inherit address regions from "
-               "directories and no region parameters "
-               "(addr_range_start, addr_range_end, interleave_size, "
-               "interleave_step) were detected. All addresses will map to "
-               "this memory: if this is intended, you may ignore this warning "
-               "or set addr_range_start to 0 in your input deck "
-               "to eliminate this warning.\n",
-               getName().c_str());
-  }
-
   // Ensure SI units are power-2 not power-10 - for backward compability
   fixByteUnits(ilSize);
   fixByteUnits(ilStep);
@@ -288,26 +242,58 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
   region_.interleaveStep = (uint64_t)UnitAlgebra(ilStep).getRoundedValue();
 
   link_ = loadUserSubComponent<MemLinkBase>(
-      "cpulink", ComponentInfo::SHARE_NONE, clockTimeBase_);
+      "highlink", ComponentInfo::SHARE_NONE, &clockTimeBase_);
+  if (!link_) {
+    link_ = loadUserSubComponent<MemLinkBase>(
+        "cpulink", ComponentInfo::SHARE_NONE, &clockTimeBase_);
+    if (link_) {
+      out.output("%s, WARNING - Deprecation: The 'cpulink' subcomponent slot "
+                 "has been renamed to 'highlink' to improve name "
+                 "standardization. Please change this in your input file.\n",
+                 getName().c_str());
+    }
+  }
+
   flink_ = loadUserSubComponent<MemLinkBase>(
-      "forwardlink", ComponentInfo::SHARE_NONE, clockTimeBase_);
+      "forwardlink", ComponentInfo::SHARE_NONE, &clockTimeBase_);
 
   if (!link_ && isPortConnected("direct_link")) {
     Params linkParams = params.get_scoped_params("cpulink");
     linkParams.insert("port", "direct_link");
     linkParams.insert("latency", link_lat, false);
     link_ = loadAnonymousSubComponent<MemLinkBase>(
-        "memHierarchy.MemLink", "cpulink", 0,
+        "memHierarchy.MemLink", "highlink", 0,
         ComponentInfo::SHARE_PORTS | ComponentInfo::INSERT_STATS, linkParams,
-        clockTimeBase_);
+        &clockTimeBase_);
+    out.output("%s, WARNING - Deprecation: To standardize port names across "
+               "memHierarchy elements, the MemController's port 'direct_link' "
+               "has been renamed to 'highlink'. The 'direct_link' port will be "
+               "removed in SST 16.\n",
+               getName().c_str());
+  } else if (!link_ && isPortConnected("highlink")) {
+    Params linkParams = params.get_scoped_params("highlink");
+    linkParams.insert("port", "highlink");
+    linkParams.insert("latency", link_lat, false);
+    link_ = loadAnonymousSubComponent<MemLinkBase>(
+        "memHierarchy.MemLink", "highlink", 0,
+        ComponentInfo::SHARE_PORTS | ComponentInfo::INSERT_STATS, linkParams,
+        &clockTimeBase_);
   } else if (!link_) {
 
     if (!isPortConnected("network")) {
-      out.fatal(CALL_INFO, -1,
-                "%s, Error: No connected port detected. Connect 'direct_link' "
-                "or 'network' port.\n",
-                getName().c_str());
+      out.fatal(
+          CALL_INFO, -1,
+          "%s, ERROR: No connected port detected. Connect 'highlink' port, or "
+          "if this memory is on a network, fill the 'highlink' subcomponent "
+          "slot with memHierarchy.MemNIC or memHierarchy.MemNICFour.\n",
+          getName().c_str());
     }
+
+    out.output(
+        "%s, WARNING - Deprecation: Use of the network* ports in MemController "
+        "is deprecated. Instead, fill this component's 'highlink' subcomponent "
+        "slot with memHierarchy.MemNIC or memHierarchy.MemNICFour\n",
+        getName().c_str());
 
     Params nicParams = params.get_scoped_params("memNIC");
     nicParams.insert("group", "4", false);
@@ -319,28 +305,30 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
       nicParams.insert("fwd.port", "network_fwd");
       nicParams.insert("data.port", "network_data");
       link_ = loadAnonymousSubComponent<MemLinkBase>(
-          "memHierarchy.MemNICFour", "cpulink", 0,
+          "memHierarchy.MemNICFour", "highlink", 0,
           ComponentInfo::SHARE_PORTS | ComponentInfo::INSERT_STATS, nicParams,
-          clockTimeBase_);
+          &clockTimeBase_);
     } else {
       nicParams.insert("port", "network");
       link_ = loadAnonymousSubComponent<MemLinkBase>(
-          "memHierarchy.MemNIC", "cpulink", 0,
+          "memHierarchy.MemNIC", "highlink", 0,
           ComponentInfo::SHARE_PORTS | ComponentInfo::INSERT_STATS, nicParams,
-          clockTimeBase_);
+          &clockTimeBase_);
     }
   }
 
   clockLink_ = link_->isClocked();
   link_->setRecvHandler(
-      new Event::Handler<MemControllerKG>(this, &MemControllerKG::handleEvent));
+      new Event::Handler2<MemControllerKG, &MemControllerKG::handleEvent>(
+          this));
 
   link_->setRegion(region_);
 
   if (flink_) {
     fClockLink_ = flink_->isClocked();
-    flink_->setRecvHandler(new Event::Handler<MemControllerKG>(
-        this, &MemControllerKG::handleFLinkEvent));
+    flink_->setRecvHandler(
+        new Event::Handler2<MemControllerKG,
+                            &MemControllerKG::handleFLinkEvent>(this));
     // flink is the compliment of the addresses owned by this memory controller
     // flink_->setRegion(fregion_);
   }
@@ -370,8 +358,8 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
   if (backingType != "none" && backingType != "mmap" &&
       backingType != "malloc") {
     out.fatal(CALL_INFO, -1,
-              "%s, Error - Invalid param: backing. Must be one of 'none', "
-              "'malloc', or 'mmap'. You specified: %s\n",
+              "%s, ERROR - Invalid parameter: 'backing'. Must be one of "
+              "'none', 'malloc', or 'mmap'. You specified: %s\n",
               getName().c_str(), backingType.c_str());
   }
 
@@ -379,8 +367,8 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
   UnitAlgebra size_ua(size);
   if (!size_ua.hasUnits("B")) {
     out.fatal(CALL_INFO, -1,
-              "%s, Error - Invalid param: backing_size_unit. Must have units "
-              "of bytes (B). SI ok. You specified: %s\n",
+              "%s, ERROR - Invalid parameter: 'backing_size_unit'. Must have "
+              "units of bytes (B). SI ok. You specified: %s\n",
               getName().c_str(), size.c_str());
   }
   size_t sizeBytes =
@@ -393,43 +381,101 @@ MemControllerKG::MemControllerKG(ComponentId_t id, Params &params)
     sizeBytes = 1 << log2Of((int)memBackendConvertor_->getMemSize());
   }
 
-  if (backingType == "mmap") {
-    std::string memoryFile =
-        params.find<std::string>("memory_file", NO_STRING_DEFINED);
+  /* Create the backing store */
+  std::string infile = params.find<std::string>("backing_in_file", "");
+  backing_outfile_ = params.find<std::string>("backing_out_file", "", found);
 
-    if (0 == memoryFile.compare(NO_STRING_DEFINED)) {
-      memoryFile.clear();
+  if (backingType == "mmap") {
+    if (!found) { // memory_file deprecated in SST 15, remove SST 16
+      backing_outfile_ = params.find<std::string>("memory_file", "", found);
+      if (found) {
+        out.output("%s, WARNING - Deprecation: The parameter 'memory_file' is "
+                   "deprecated. Use 'backing_in_file' and/or "
+                   "'backing_out_file' instead.",
+                   getName().c_str());
+        if (0 == backing_outfile_.compare(SST_MEMH_NO_STRING_DEFINED)) {
+          backing_outfile_.clear();
+        }
+        infile = backing_outfile_;
+      }
     }
+    // Place backing file in sst output directory
+    if (backing_outfile_ != infile && infile != "")
+      backing_outfile_ = SST::Util::Filesystem::getAbsolutePath(
+          backing_outfile_, getOutputDirectory());
     try {
-      backing_ = new Backend::BackingMMAP(memoryFile,
+      backing_ = new Backend::BackingMMAP(backing_outfile_, infile,
                                           memBackendConvertor_->getMemSize());
     } catch (int e) {
       if (e == 1)
-        out.fatal(
-            CALL_INFO, -1,
-            "%s, Error - unable to open memory_file. You specified '%s'.\n",
-            getName().c_str(), memoryFile.c_str());
+        out.fatal(CALL_INFO, -1,
+                  "%s, ERROR: Unable to open backing_out_file. Requested file "
+                  "is '%s'.\n",
+                  getName().c_str(), backing_outfile_.c_str());
+      else if (e == 3)
+        out.fatal(CALL_INFO, -1,
+                  "%s, ERROR: Unable to open backing_in_file. Requested file "
+                  "is '%s'.\n",
+                  getName().c_str(), infile.c_str());
       else if (e == 2) {
-        if (memoryFile == "") {
-          out.verbose(
-              CALL_INFO, 1, 0,
-              "%s, Could not MMAP backing store (likely, simulated memory "
-              "exceeds real memory). Creating malloc based store instead.\n",
-              getName().c_str());
+        if (backing_outfile_ == "" && infile == "") {
+          out.verbose(CALL_INFO, 1, 0,
+                      "%s, WARNING: Could not MMAP backing store (likely, "
+                      "simulated memory exceeds available memory space). "
+                      "Creating malloc based store instead.\n",
+                      getName().c_str());
           backing_ = new Backend::BackingMalloc(sizeBytes, initBacking);
+        } else if (infile != "") {
+          out.fatal(
+              CALL_INFO, -1,
+              "%s, ERROR: Could not MMAP backing store (likely, simulated "
+              "memory exceeds available memory). Cannot initialize malloc "
+              "based store from provided mmap input file %s.\n",
+              getName().c_str(), infile.c_str());
         } else {
           out.fatal(CALL_INFO, -1,
-                    "%s, Error - Could not MMAP backing store from file %s\n",
-                    getName().c_str(), memoryFile.c_str());
+                    "%s, ERROR: Could not MMAP backing store from file %s\n",
+                    getName().c_str(), backing_outfile_.c_str());
         }
+      } else if (e == 4) {
+        out.fatal(CALL_INFO, -1, "%s, ERROR: Could not MMAP input file %s\n",
+                  getName().c_str(), infile.c_str());
       } else
         out.fatal(CALL_INFO, -1,
-                  "%s, Error - unable to create backing store. Exception "
-                  "thrown is %d.\n",
+                  "%s, ERROR: Unable to create backing store. Exception thrown "
+                  "is %d.\n",
                   getName().c_str(), e);
     }
   } else if (backingType == "malloc") {
-    backing_ = new Backend::BackingMalloc(sizeBytes, initBacking);
+    if (infile != "") {
+      try {
+        backing_ = new Backend::BackingMalloc(infile);
+      } catch (int e) {
+        if (e == 1) {
+          out.fatal(CALL_INFO, -1,
+                    "%s, ERROR: Unable to open 'backing_in_file'. Does file "
+                    "exist? Filename='%s'\n",
+                    getName().c_str(), infile.c_str());
+        } else
+          out.fatal(CALL_INFO, -1,
+                    "%s, ERROR: Unable to create backing store. Exception "
+                    "thrown is %d.\n",
+                    getName().c_str(), e);
+      }
+    } else {
+      backing_ = new Backend::BackingMalloc(sizeBytes, initBacking);
+    }
+    // Test outfile to find issues before simulation begins
+    if (backing_outfile_ != "") {
+      auto fp = fopen(backing_outfile_.c_str(), "wb+");
+      sst_assert(fp, CALL_INFO, -1,
+                 "%s, ERROR: Unable to open 'backing_out_file'. Is filepath "
+                 "accessible? Filename='%s'\n",
+                 getName().c_str(), backing_outfile_.c_str());
+      fclose(fp);
+    }
+  } else {
+    backing_outfile_ = "";
   }
 
   /* Custom command handler */
@@ -481,11 +527,11 @@ void MemControllerKG::handleEvent(SST::Event *event) {
   }
 
   MemEventBase *meb = static_cast<MemEventBase *>(event);
-
-  if (is_debug_event(meb)) {
-    Debug(_L3_, "E: %-20" PRIu64 " %-20" PRIu64 " %-20s Event:New     (%s)\n",
-          getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
-          getName().c_str(), meb->getVerboseString((int)dlevel).c_str());
+  if (mem_h_is_debug_event(meb)) {
+    mem_h_debug_output(
+        _L3_, "E: %-20" PRIu64 " %-20" PRIu64 " %-20s Event:New     (%s)\n",
+        getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
+        getName().c_str(), meb->getVerboseString(dlevel).c_str());
   }
 
   Command cmd = meb->getCmd();
@@ -534,15 +580,15 @@ void MemControllerKG::handleEvent(SST::Event *event) {
   // Disabled except in debug mode
   if (!region_.contains(ev->getBaseAddr())) {
     out.fatal(CALL_INFO, -1,
-              "%s, Error: Received an event with a base address that does not "
+              "%s, ERROR: Received an event with a base address that does not "
               "map to this controller. Event: %s\n",
-              getName().c_str(), ev->getVerboseString((int)dlevel).c_str());
+              getName().c_str(), ev->getVerboseString(dlevel).c_str());
   }
   if (!region_.contains(ev->getAddr())) {
     out.fatal(CALL_INFO, -1,
-              "%s, Error: Received an event with an address that does not map "
+              "%s, ERROR: Received an event with an address that does not map "
               "to this controller. Event: %s\n",
-              getName().c_str(), ev->getVerboseString((int)dlevel).c_str());
+              getName().c_str(), ev->getVerboseString(dlevel).c_str());
   }
 
   bool noncacheable = ev->queryFlag(MemEvent::F_NONCACHEABLE);
@@ -567,18 +613,18 @@ void MemControllerKG::handleEvent(SST::Event *event) {
     if (b0 < (chkAddr + ev->getSize() - 1)) {
       if ((b0 + 1) != a1) {
         out.fatal(CALL_INFO, -1,
-                  "%s: Error: Received an event for an address range that "
-                  "does not map to this controller. Event: %s\n",
-                  getName().c_str(), ev->getVerboseString((int)dlevel).c_str());
+                  "%s: ERROR: Received an event for an address range that does "
+                  "not map to this controller. Event: %s\n",
+                  getName().c_str(), ev->getVerboseString(dlevel).c_str());
       }
     }
   } else if (ev->getSize() > 0) { // Contiguous address region, make sure last
                                   // address of request falls in region
     if (!region_.contains(chkAddr + ev->getSize() - 1))
       out.fatal(CALL_INFO, -1,
-                "%s, Error: Received an event for an address range that does "
+                "%s, ERROR: Received an event for an address range that does "
                 "not map to this controller. Event: %s\n",
-                getName().c_str(), ev->getVerboseString((int)dlevel).c_str());
+                getName().c_str(), ev->getVerboseString(dlevel).c_str());
   }
 #endif
 
@@ -601,10 +647,11 @@ void MemControllerKG::handleEvent(SST::Event *event) {
   case Command::GetSX:
   case Command::Write:
     outstandingEvents_.insert(std::make_pair(ev->getID(), ev));
-    if (is_debug_event(ev)) {
-      Debug(_L4_, "B: %-20" PRIu64 " %-20" PRIu64 " %-20s Bkend:Send    (%s)\n",
-            getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
-            getName().c_str(), ev->getVerboseString().c_str());
+    if (mem_h_is_debug_event(ev)) {
+      mem_h_debug_output(
+          _L4_, "B: %-20" PRIu64 " %-20" PRIu64 " %-20s Bkend:Send    (%s)\n",
+          getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
+          getName().c_str(), ev->getVerboseString().c_str());
     }
     memBackendConvertor_->handleMemEvent(ev);
     break;
@@ -617,24 +664,37 @@ void MemControllerKG::handleEvent(SST::Event *event) {
                          Command::PutM, ev->getPayload());
       put->setFlag(MemEvent::F_NORESPONSE);
       outstandingEvents_.insert(std::make_pair(put->getID(), put));
-      if (is_debug_event(put)) {
-        Debug(_L4_,
-              "B: %-20" PRIu64 " %-20" PRIu64 " %-20s Bkend:Send    (%s)\n",
-              getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
-              getName().c_str(), put->getVerboseString().c_str());
+      if (mem_h_is_debug_event(put)) {
+        mem_h_debug_output(
+            _L4_, "B: %-20" PRIu64 " %-20" PRIu64 " %-20s Bkend:Send    (%s)\n",
+            getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
+            getName().c_str(), put->getVerboseString().c_str());
       }
       memBackendConvertor_->handleMemEvent(put);
     }
 
     outstandingEvents_.insert(std::make_pair(ev->getID(), ev));
     ev->setCmd(Command::FlushLine);
-    if (is_debug_event(ev)) {
-      Debug(_L4_, "B: %-20" PRIu64 " %-20" PRIu64 " %-20s Bkend:Send    (%s)\n",
-            getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
-            getName().c_str(), ev->getVerboseString().c_str());
+    if (mem_h_is_debug_event(ev)) {
+      mem_h_debug_output(
+          _L4_, "B: %-20" PRIu64 " %-20" PRIu64 " %-20s Bkend:Send    (%s)\n",
+          getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
+          getName().c_str(), ev->getVerboseString().c_str());
     }
     memBackendConvertor_->handleMemEvent(ev);
 
+  } break;
+  case Command::FlushAll: {
+    MemEvent *resp = ev->makeResponse();
+
+    if (mem_h_is_debug_event(resp)) {
+      mem_h_debug_output(
+          _L4_, "E: %-20" PRIu64 " %-20" PRIu64 " %-20s Event:Send    (%s)\n",
+          getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
+          getName().c_str(), resp->getVerboseString(dlevel).c_str());
+    }
+    link_->send(resp);
+    delete ev;
   } break;
 
   case Command::PutS:
@@ -680,7 +740,7 @@ Cycle_t MemControllerKG::turnClockOn() {
 void MemControllerKG::handleCustomEvent(MemEventBase *ev) {
   if (!customCommandHandler_)
     out.fatal(CALL_INFO, -1,
-              "%s, Error: Received custom event but no handler loaded. Ev = "
+              "%s, ERROR: Received custom event but no handler loaded. Ev = "
               "%s. Time = %" PRIu64 "ns\n",
               getName().c_str(), ev->getVerboseString((int)dlevel).c_str(),
               getCurrentSimTimeNano());
@@ -688,17 +748,18 @@ void MemControllerKG::handleCustomEvent(MemEventBase *ev) {
   CustomCmdMemHandler::MemEventInfo evInfo = customCommandHandler_->receive(ev);
   if (evInfo.shootdown) {
     out.verbose(CALL_INFO, 1, 0,
-                "%s, WARNING: Custom event expects a shootdown but this "
-                "memory controller does not support shootdowns. Ev = %s\n",
+                "%s, WARNING: Custom event expects a shootdown but this memory "
+                "controller does not support shootdowns. Ev = %s\n",
                 getName().c_str(), ev->getVerboseString((int)dlevel).c_str());
   }
 
   Interfaces::StandardMem::CustomData *info = customCommandHandler_->ready(ev);
   outstandingEvents_.insert(std::make_pair(ev->getID(), ev));
-  if (is_debug_event(ev)) {
-    Debug(_L4_, "B: %-20" PRIu64 " %-20" PRIu64 " %-20s Bkend:Send    (%s)\n",
-          getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
-          getName().c_str(), ev->getVerboseString().c_str());
+  if (mem_h_is_debug_event(ev)) {
+    mem_h_debug_output(
+        _L4_, "B: %-20" PRIu64 " %-20" PRIu64 " %-20s Bkend:Send    (%s)\n",
+        getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
+        getName().c_str(), ev->getVerboseString().c_str());
   }
   memBackendConvertor_->handleCustomEvent(info, ev->getID(), ev->getRqstr());
 }
@@ -721,21 +782,21 @@ void MemControllerKG::handleMemResponse(Event::id_type id, uint32_t flags) {
   std::map<SST::Event::id_type, MemEventBase *>::iterator it =
       outstandingEvents_.find(id);
   if (it == outstandingEvents_.end())
-    out.fatal(
-        CALL_INFO, -1,
-        "Memory controller (%s) received unrecognized response ID: %" PRIu64
-        ", %" PRIu32 "",
-        getName().c_str(), id.first, id.second);
+    out.fatal(CALL_INFO, -1,
+              "%s, ERROR: Memory controller received unrecognized response ID: "
+              "%" PRIu64 ", %" PRIu32 "",
+              getName().c_str(), id.first, id.second);
 
   MemEventBase *evb = it->second;
   outstandingEvents_.erase(it);
 
-  if (is_debug_event(evb)) {
-    Debug(_L4_,
-          "B: %-20" PRIu64 " %-20" PRIu64 " %-20s Bkend:Recv    (<%" PRIu64
-          ",%" PRIu32 ">)\n",
-          getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
-          getName().c_str(), id.first, id.second);
+  if (mem_h_is_debug_event(evb)) {
+    mem_h_debug_output(_L4_,
+                       "B: %-20" PRIu64 " %-20" PRIu64
+                       " %-20s Bkend:Recv    (<%" PRIu64 ",%" PRIu32 ">)\n",
+                       getCurrentSimCycle(),
+                       getNextClockCycle(clockTimeBase_) - 1, getName().c_str(),
+                       id.first, id.second);
   }
 
   /* Handle custom events */
@@ -750,6 +811,8 @@ void MemControllerKG::handleMemResponse(Event::id_type id, uint32_t flags) {
 
   /* Handle MemEvents */
   MemEvent *ev = static_cast<MemEvent *>(evb);
+
+  // bool noncacheable = ev->queryFlag(MemEvent::F_NONCACHEABLE);
 
   /* Write data. Here instead of receive to try to match backing access order to
    * backend execute order */
@@ -803,10 +866,11 @@ void MemControllerKG::handleMemResponse(Event::id_type id, uint32_t flags) {
     resp->setAddr(translateToGlobal(ev->getAddr()));
   }
 
-  if (is_debug_event(resp)) {
-    Debug(_L3_, "E: %-20" PRIu64 " %-20" PRIu64 " %-20s Event:Resp    (%s)\n",
-          getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
-          getName().c_str(), resp->getVerboseString((int)dlevel).c_str());
+  if (mem_h_is_debug_event(resp)) {
+    mem_h_debug_output(
+        _L4_, "E: %-20" PRIu64 " %-20" PRIu64 " %-20s Event:Send    (%s)\n",
+        getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
+        getName().c_str(), resp->getVerboseString(dlevel).c_str());
   }
 
   if (ev->queryFlag(PIMMemEvent::F_PIM)) {
@@ -869,6 +933,22 @@ void MemControllerKG::setup(void) {
     flink_->setup();
 }
 
+void MemControllerKG::complete(unsigned int phase) {
+  memBackendConvertor_->complete(phase);
+  link_->complete(phase);
+
+  // Initiate flush here if configured to do so
+  if (!phase && (backing_outfile_ != "" || backing_outscreen_)) {
+    MemEventUntimedFlush *flush = new MemEventUntimedFlush(getName());
+    mem_h_debug_output(_L10_, "U: %-20s   Event:Untimed   (%s)\n",
+                       getName().c_str(), flush->getVerboseString().c_str());
+    link_->sendUntimedData(flush, true); /* Broadcast to all sources */
+  }
+
+  while (MemEventInit *ev = link_->recvUntimedData()) {
+    processInitEvent(ev);
+  }
+}
 void MemControllerKG::finish(void) {
   Cycle_t cycle = getNextClockCycle(clockTimeBase_); // Get finish time
   cycle--;
@@ -876,6 +956,21 @@ void MemControllerKG::finish(void) {
   link_->finish();
   if (flink_)
     flink_->finish();
+
+  if (backing_outfile_ != "") {
+    try {
+      backing_->printToFile(backing_outfile_);
+    } catch (int e) { // Don't fatal so late in simulation
+      out.output("%s, WARNING: Unable to open file '%s' provided by parameter "
+                 "'backing_out_file' to write memory contents. Memory contents "
+                 "will not be written.\n",
+                 getName().c_str(), backing_outfile_.c_str());
+    }
+  }
+  if (backing_outscreen_) {
+    backing_->printToScreen(privateMemOffset_, region_.start,
+                            region_.interleaveSize, region_.interleaveStep);
+  }
 }
 
 void MemControllerKG::writeData(MemEvent *event) {
@@ -883,9 +978,10 @@ void MemControllerKG::writeData(MemEvent *event) {
     Addr addr = event->queryFlag(MemEvent::F_NONCACHEABLE)
                     ? event->getAddr()
                     : event->getBaseAddr();
-    if (is_debug_event(event)) {
-      Debug(_L8_, "\tUpdate backing. Addr = %" PRIx64 ", Size = %i\n", addr,
-            event->getSize());
+    if (mem_h_is_debug_event(event)) {
+      mem_h_debug_output(_L8_,
+                         "S: Update backing. Addr = %" PRIx64 ", Size = %i\n",
+                         addr, event->getSize());
       printDataValue(addr, &(event->getPayload()), true);
     }
 
@@ -896,9 +992,10 @@ void MemControllerKG::writeData(MemEvent *event) {
 
   if (event->getCmd() == Command::Write) {
     Addr addr = event->getAddr();
-    if (is_debug_event(event)) {
-      Debug(_L8_, "\tUpdate backing. Addr = %" PRIx64 ", Size = %i\n", addr,
-            event->getSize());
+    if (mem_h_is_debug_event(event)) {
+      mem_h_debug_output(_L8_,
+                         "S: Update backing. Addr = %" PRIx64 ", Size = %i\n",
+                         addr, event->getSize());
       printDataValue(addr, &(event->getPayload()), true);
     }
 
@@ -917,7 +1014,7 @@ void MemControllerKG::readData(MemEvent *event) {
 
   if (backing_) {
     backing_->get(localAddr, event->getSize(), payload);
-    if (is_debug_addr(localAddr))
+    if (mem_h_is_debug_addr(localAddr))
       printDataValue(localAddr, &(payload), false);
   }
 
@@ -933,7 +1030,7 @@ void MemControllerKG::writeData(Addr addr, std::vector<uint8_t> *data) {
     backing_->set(addr + i, data->at(i));
   }
 
-  if (is_debug_addr(addr))
+  if (mem_h_is_debug_addr(addr))
     printDataValue(addr, data, true);
 }
 
@@ -947,7 +1044,7 @@ void MemControllerKG::readData(Addr addr, size_t bytes,
   for (size_t i = 0; i < bytes; i++)
     data[i] = backing_->get(addr + i);
 
-  if (is_debug_addr(addr))
+  if (mem_h_is_debug_addr(addr))
     printDataValue(addr, &data, false);
 }
 
@@ -962,11 +1059,12 @@ Addr MemControllerKG::translateToLocal(Addr addr) {
     Addr offset = shift % region_.interleaveStep;
     rAddr = (step * region_.interleaveSize) + offset + privateMemOffset_;
   }
-  if (is_debug_addr(addr) && addr != rAddr) {
-    Debug(_L10_,
-          "C: %-40" PRIu64 "  %-20s ConvertAddr   Local, 0x%" PRIx64
-          ", 0x%" PRIx64 "\n",
-          getCurrentSimCycle(), getName().c_str(), addr, rAddr);
+  if (mem_h_is_debug_addr(addr) && addr != rAddr) {
+    mem_h_debug_output(_L10_,
+                       "C: %-40" PRIu64
+                       "  %-20s ConvertAddr   Local, 0x%" PRIx64 ", 0x%" PRIx64
+                       "\n",
+                       getCurrentSimCycle(), getName().c_str(), addr, rAddr);
   }
   return rAddr;
 }
@@ -981,11 +1079,12 @@ Addr MemControllerKG::translateToGlobal(Addr addr) {
     rAddr = rAddr / region_.interleaveSize;
     rAddr = rAddr * region_.interleaveStep + offset + region_.start;
   }
-  if (is_debug_addr(rAddr) && addr != rAddr) {
-    Debug(_L10_,
-          "C: %-40" PRIu64 "  %-20s ConvertAddr   Global, 0x%" PRIx64
-          ", 0x%" PRIx64 "\n",
-          getCurrentSimCycle(), getName().c_str(), addr, rAddr);
+  if (mem_h_is_debug_addr(rAddr) && addr != rAddr) {
+    mem_h_debug_output(_L10_,
+                       "C: %-40" PRIu64
+                       "  %-20s ConvertAddr   Global, 0x%" PRIx64 ", 0x%" PRIx64
+                       "\n",
+                       getCurrentSimCycle(), getName().c_str(), addr, rAddr);
   }
   return rAddr;
 }
@@ -993,23 +1092,46 @@ Addr MemControllerKG::translateToGlobal(Addr addr) {
 void MemControllerKG::processInitEvent(MemEventInit *me) {
   /* Push data to memory */
   if (Command::Write == me->getCmd()) {
-    me->setAddr(translateToLocal(me->getAddr()));
-    Addr addr = me->getAddr();
-    if (is_debug_event(me)) {
-      Debug(_L9_, "Memory init %s - Received Write for %" PRIx64 " size %zu\n",
-            getName().c_str(), me->getAddr(), me->getPayload().size());
-    }
-    if (isRequestAddressValid(addr) && backing_) {
+    if (isRequestAddressValid(me->getAddr()) && backing_) {
+      me->setAddr(translateToLocal(me->getAddr()));
+      Addr addr = me->getAddr();
+      mem_h_debug_output(_L10_, "U: %-20s   Event:Write     (%s)\n",
+                         getName().c_str(), me->getVerboseString().c_str());
       backing_->set(addr, me->getPayload().size(), me->getPayload());
+    } else {
+      mem_h_debug_output(_L10_, "U: %-20s   Event:Write     (%s) IGNORE\n",
+                         getName().c_str(), me->getVerboseString().c_str());
+    }
+  } else if (Command::GetS == me->getCmd()) {
+    if (isRequestAddressValid(me->getAddr())) {
+      Addr local_addr = translateToLocal(me->getAddr());
+      mem_h_debug_output(_L10_, "U: %-20s   Event:GetS      (%s)\n",
+                         getName().c_str(), me->getVerboseString().c_str());
+
+      MemEventInit *resp = me->makeResponse();
+      vector<uint8_t> payload;
+
+      if (backing_) {
+        backing_->get(local_addr, me->getSize(), payload);
+      } else {
+        payload.resize(me->getSize(), 0);
+      }
+
+      resp->setPayload(payload);
+      mem_h_debug_output(_L10_, "U: %-20s   Event:Send      (%s)\n",
+                         getName().c_str(), resp->getVerboseString().c_str());
+      link_->sendUntimedData(resp);
+    } else {
+      mem_h_debug_output(_L10_, "U: %-20s   Event:GetS      (%s) IGNORE\n",
+                         getName().c_str(), me->getVerboseString().c_str());
     }
   } else if (Command::NULLCMD == me->getCmd()) {
-    if (is_debug_event(me)) {
-      Debug(_L9_, "Memory (%s) received init event: %s\n", getName().c_str(),
-            me->getVerboseString((int)dlevel).c_str());
-    }
+    mem_h_debug_output(_L10_, "U: %-20s   Event:Untimed   (%s)\n",
+                       getName().c_str(), me->getVerboseString().c_str());
   } else {
-    out.debug(_L10_, "Memory received unexpected Init Command: %d\n",
-              (int)me->getCmd());
+    mem_h_debug_output(_L10_,
+                       "U: %-20s   Event:Untimed   UNKNOWN COMMAND (%s)\n",
+                       getName().c_str(), me->getVerboseString().c_str());
   }
 
   delete me;
@@ -1122,4 +1244,55 @@ void MemControllerKG::printDataValue(Addr addr, std::vector<uint8_t> *data,
             getCurrentSimCycle(), getNextClockCycle(clockTimeBase_) - 1,
             getName().c_str(), action.c_str(), addr, data->size(),
             value.str().c_str());
+}
+
+/*
+ * Default constructor
+ */
+MemControllerKG::MemControllerKG() : Component() {}
+
+/*
+ * Serialize function
+ */
+void MemControllerKG::serialize_order(
+    SST::Core::Serialization::serializer &ser) {
+  Component::serialize_order(ser);
+
+  SST_SER(out);
+  SST_SER(dbg);
+  SST_SER(DEBUG_ADDR);
+  SST_SER(dlevel);
+
+  SST_SER(memBackendConvertor_);
+
+  if (ser.mode() == SST::Core::Serialization::serializer::UNPACK) {
+    using std::placeholders::_1;
+    using std::placeholders::_2;
+    memBackendConvertor_->setCallbackHandlers(
+        std::bind(&MemControllerKG::handleMemResponse, this, _1, _2),
+        std::bind(&MemControllerKG::turnClockOn, this));
+  }
+
+  SST_SER(backing_);
+  SST_SER(backing_outfile_);
+
+  SST_SER(link_);
+  SST_SER(clockLink_);
+
+  // SST_SER(listeners_);
+  SST_SER(checkpointDir_);
+
+  SST_SER(memSize_);
+
+  SST_SER(clockOn_);
+
+  SST_SER(region_);
+  SST_SER(privateMemOffset_);
+
+  SST_SER(clockHandler_);
+  SST_SER(clockTimeBase_);
+
+  SST_SER(customCommandHandler_);
+
+  SST_SER(outstandingEvents_);
 }

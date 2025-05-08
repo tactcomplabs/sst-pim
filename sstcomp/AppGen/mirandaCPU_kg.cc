@@ -1,8 +1,8 @@
-// Copyright 2009-2024 NTESS. Under the terms
+// Copyright 2009-2025 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2024, NTESS
+// Copyright (c) 2009-2025, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -56,7 +56,7 @@ RequestGenCPU_KG::RequestGenCPU_KG(SST::ComponentId_t id, SST::Params &params)
 
   std::string cpuClock = params.find<std::string>("clock", "2GHz");
   clockHandler =
-      new Clock::Handler<RequestGenCPU_KG>(this, &RequestGenCPU_KG::clockTick);
+      new Clock::Handler2<RequestGenCPU_KG, &RequestGenCPU_KG::clockTick>(this);
   timeConverter = registerClock(cpuClock, clockHandler);
 
   out->verbose(CALL_INFO, 1, 0, "CPU clock configured for %s\n",
@@ -86,9 +86,10 @@ RequestGenCPU_KG::RequestGenCPU_KG(SST::ComponentId_t id, SST::Params &params)
   // cache_link
   //
   cache_link = loadUserSubComponent<Interfaces::StandardMem>(
-      "memory", ComponentInfo::SHARE_NONE, timeConverter,
-      new Interfaces::StandardMem::Handler<RequestGenCPU_KG>(
-          this, &RequestGenCPU_KG::handleEvent));
+      "memory", ComponentInfo::SHARE_NONE, &timeConverter,
+      new Interfaces::StandardMem::Handler2<RequestGenCPU_KG,
+                                            &RequestGenCPU_KG::handleEvent>(
+          this));
   if (!cache_link) {
     std::string interfaceName = params.find<std::string>(
         "memoryinterface", "memHierarchy.standardInterface");
@@ -100,9 +101,10 @@ RequestGenCPU_KG::RequestGenCPU_KG(SST::ComponentId_t id, SST::Params &params)
     cache_link = loadAnonymousSubComponent<Interfaces::StandardMem>(
         interfaceName, "memory", 0,
         ComponentInfo::SHARE_PORTS | ComponentInfo::INSERT_STATS,
-        interfaceParams, timeConverter,
-        new Interfaces::StandardMem::Handler<RequestGenCPU_KG>(
-            this, &RequestGenCPU_KG::handleEvent));
+        interfaceParams, &timeConverter,
+        new Interfaces::StandardMem::Handler2<RequestGenCPU_KG,
+                                              &RequestGenCPU_KG::handleEvent>(
+            this));
 
     if (!cache_link)
       out->fatal(CALL_INFO, -1, "%s, Error loading memory interface\n",
@@ -183,9 +185,10 @@ RequestGenCPU_KG::RequestGenCPU_KG(SST::ComponentId_t id, SST::Params &params)
       assert(false); // not supported right?
       // TODO create a generator that gets data from a port
       out->verbose(CALL_INFO, 1, 0, "getting generators from a link\n");
-      srcLink = configureLink("src", "50ps",
-                              new Event::Handler<RequestGenCPU_KG>(
-                                  this, &RequestGenCPU_KG::handleSrcEvent));
+      srcLink = configureLink(
+          "src", "50ps",
+          new Event::Handler2<RequestGenCPU_KG,
+                              &RequestGenCPU_KG::handleSrcEvent>(this));
       if (NULL == srcLink) {
         out->fatal(CALL_INFO, -1, "Failed to configure src link\n");
       }
@@ -258,7 +261,7 @@ void RequestGenCPU_KG::handleSrcEvent(Event *ev) {
                event->generators.size());
   loadGenerator(event);
 
-  if (0 != timeConverter->convertFromCoreTime(getCurrentSimCycle())) {
+  if (0 != timeConverter.convertFromCoreTime(getCurrentSimCycle())) {
     clockTick(reregisterClock(timeConverter, clockHandler));
   }
 
@@ -601,10 +604,10 @@ bool RequestGenCPU_KG::clockTick(SST::Cycle_t cycle) {
       break;
     }
 
-    MemoryOpRequest *memOpReq;
     GeneratorRequest *nxtRq = pendingRequests.at(i);
+    ReqOperation op = nxtRq->getOperation();
 
-    if (nxtRq->getOperation() == REQ_FENCE) {
+    if (op == REQ_FENCE) {
       if (0 == requestsInFlight.size()) {
         out->verbose(CALL_INFO, 4, 0,
                      "Fence operation completed, no pending requests, will be "
@@ -625,7 +628,7 @@ bool RequestGenCPU_KG::clockTick(SST::Cycle_t cycle) {
 
       // Fence operations do now allow anything else to complete in this cycle
       break;
-    } else if (nxtRq->getOperation() == CUSTOM) {
+    } else if (op == CUSTOM) {
       if (requestsPending[CUSTOM] < maxRequestsPending[CUSTOM]) {
         out->verbose(
             CALL_INFO, 4, 0,
@@ -648,10 +651,9 @@ bool RequestGenCPU_KG::clockTick(SST::Cycle_t cycle) {
           delete nxtRq;
         }
       }
-    } else if ((memOpReq = dynamic_cast<MemoryOpRequest *>(nxtRq))) {
-
-      if (requestsPending[memOpReq->getOperation()] <
-          maxRequestsPending[memOpReq->getOperation()]) {
+    } else if (op == READ || op == WRITE) {
+      if (requestsPending[op] < maxRequestsPending[op]) {
+        auto memOpReq = static_cast<MemoryOpRequest *>(nxtRq);
         out->verbose(
             CALL_INFO, 4, 0,
             "Will attempt to issue as free slots in the load/store unit.\n");

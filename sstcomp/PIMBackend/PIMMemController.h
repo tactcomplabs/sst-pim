@@ -38,7 +38,7 @@ public:
   ~PIMMemController();
 
   /* Event handling */
-  void handleMemResponse(SST::Event::id_type id, uint32_t flags);
+  void handleMemResponse(SST::Event::id_type id, uint32_t flags) override;
 
   /* Component API */
   // virtual void init(unsigned int);

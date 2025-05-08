@@ -1,8 +1,8 @@
-// Copyright 2009-2024 NTESS. Under the terms
+// Copyright 2009-2025 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2024, NTESS
+// Copyright (c) 2009-2025, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -40,12 +40,13 @@ using namespace std;
 class CustomMemEvent : public MemEventBase {
 public:
   /** Creates a new CustomMemEvent */
-  CustomMemEvent( std::string src, Command cmd, Interfaces::StandardMem::CustomData* data )
-    : MemEventBase( src, cmd ), data_( data ) {}
+  CustomMemEvent(std::string src, Command cmd,
+                 Interfaces::StandardMem::CustomData *data)
+      : MemEventBase(src, cmd), data_(data) {}
 
-  CustomMemEvent* makeResponse() override {
-    CustomMemEvent* me = new CustomMemEvent( *this );
-    me->setResponse( this );
+  CustomMemEvent *makeResponse() override {
+    CustomMemEvent *me = new CustomMemEvent(*this);
+    me->setResponse(this);
     return me;
   }
 
@@ -53,39 +54,47 @@ public:
   virtual uint32_t getEventSize() override { return data_->getSize(); }
 
   /** Get verbose print of the event */
-  virtual std::string getVerboseString( int level = 1 ) override {
-    return MemEventBase::getVerboseString( level ) + "Data: " + data_->getString();
+  virtual std::string getVerboseString(int level = 1) override {
+    return MemEventBase::getVerboseString(level) +
+           "Data: " + data_->getString();
   }
 
   /** Get brief print of the event */
-  virtual std::string getBriefString() override { return MemEventBase::getBriefString() + "Data: " + data_->getString(); }
+  virtual std::string getBriefString() override {
+    return MemEventBase::getBriefString() + "Data: " + data_->getString();
+  }
 
   /** Returns address that determines where this event is sent to */
-  virtual Addr getRoutingAddress() override { return data_->getRoutingAddress(); }
+  virtual Addr getRoutingAddress() override {
+    return data_->getRoutingAddress();
+  }
 
   virtual size_t getPayloadSize() override { return data_->getSize(); }
 
-  virtual MemEventBase* clone( void ) override { return new CustomMemEvent( *this ); }
-
-  virtual Interfaces::StandardMem::CustomData* getCustomData() { return data_; }
-
-  virtual void setCustomData( Interfaces::StandardMem::CustomData* data ) { data_ = data; }
-
-protected:
-  Interfaces::StandardMem::CustomData* data_;
-
-  CustomMemEvent() {}  // For serialization only
-
-public:
-  void serialize_order( SST::Core::Serialization::serializer& ser ) override {
-    MemEventBase::serialize_order( ser );
-    ser & data_;
+  virtual MemEventBase *clone(void) override {
+    return new CustomMemEvent(*this);
   }
 
-  ImplementSerializable( SST::MemHierarchy::CustomMemEvent );
+  virtual Interfaces::StandardMem::CustomData *getCustomData() { return data_; }
+  virtual void setCustomData(Interfaces::StandardMem::CustomData *data) {
+    data_ = data;
+  }
+
+protected:
+  Interfaces::StandardMem::CustomData *data_;
+
+  CustomMemEvent() {} // For serialization only
+
+public:
+  void serialize_order(SST::Core::Serialization::serializer &ser) override {
+    MemEventBase::serialize_order(ser);
+    SST_SER(data_);
+  }
+
+  ImplementSerializable(SST::MemHierarchy::CustomMemEvent);
 };
 
-}  // namespace MemHierarchy
-}  // namespace SST
+} // namespace MemHierarchy
+} // namespace SST
 
 #endif /* MEMHIERARHCY_MEMEVENTCUSTOM_H */

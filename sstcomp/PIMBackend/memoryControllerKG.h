@@ -1,8 +1,8 @@
-// Copyright 2009-2023 NTESS. Under the terms
+// Copyright 2009-2025 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
 //
-// Copyright (c) 2009-2023, NTESS
+// Copyright (c) 2009-2025, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -43,19 +43,33 @@ public:
 
 #define MEMCONTROLLERKG_ELI_PARAMS                                             \
   {"backend.mem_size",                                                         \
-   "(string) Size of physical memory. NEW REQUIREMENT: must include units "    \
-   "in 'B' (SI ok). Simple fix: add 'MiB' to old value.",                      \
+   "(string) Size of physical memory. Must include units in 'B' (SI prefixes " \
+   "ok).",                                                                     \
    NULL},                                                                      \
       {"clock", "(string) Clock frequency of controller", NULL},               \
-      {"backendConvertor", "(string) Backend convertor to load",               \
+      {"addr_range_start", "(uint) Lowest address handled by this memory.",    \
+       "0"},                                                                   \
+      {"addr_range_end", "(uint) Highest address handled by this memory.",     \
+       "uint64_t-1"},                                                          \
+      {"interleave_size",                                                      \
+       "(string) Size of interleaved chunks. E.g., to interleave 8B chunks "   \
+       "among 3 memories, set size=8B, step=24B",                              \
+       "0B"},                                                                  \
+      {"interleave_step",                                                      \
+       "(string) Distance between starting addresses of interleaved chunks. "  \
+       "E.g., to interleave 8B chunks among 3 memories, set size=8B, "         \
+       "step=24B",                                                             \
+       "0B"},                                                                  \
+      {"backendConvertor",                                                     \
+       "(string) Backend convertor to load. In most cases, you will not need " \
+       "to change this parameter.",                                            \
        "memHierarchy.simpleMembackendConvertor"},                              \
       {"backend",                                                              \
        "(string) Backend memory model to use for timing.  Defaults to "        \
        "simpleMem",                                                            \
        "memHierarchy.simpleMem"},                                              \
-      {"request_width", "(uint) Max request width to the backend", "64"},      \
-      {"trace_file",                                                           \
-       "(string) File name (optional) of a trace-file to generate.", ""},      \
+      {"request_width", "(uint) Max request width to the backend in bytes",    \
+       "64"},                                                                  \
       {"verbose",                                                              \
        "(uint) Output verbosity for warnings/errors. 0[fatal error only], "    \
        "1[warnings], 2[full state dump on fatal error]",                       \
@@ -69,8 +83,7 @@ public:
       {"debug_addr",                                                           \
        "(comma separated uint) Address(es) to be debugged. Leave empty for "   \
        "all, otherwise specify one or more, comma-separated values. Start "    \
-       "and "                                                                  \
-       "end string with brackets",                                             \
+       "and end string with brackets",                                         \
        ""},                                                                    \
       {"listenercount",                                                        \
        "(uint) Counts the number of listeners attached to this controller, "   \
@@ -85,46 +98,61 @@ public:
        "mmap"},                                                                \
       {"backing_size_unit",                                                    \
        "(string) For 'malloc' backing stores, malloc granularity", "1MiB"},    \
+      {"backing_init_zero",                                                    \
+       "(string) For 'malloc' backing stores, whether to initialize memory "   \
+       "values to 0",                                                          \
+       "false"},                                                               \
       {"memory_file",                                                          \
-       "(string) Optional backing-store file to pre-load memory, or store "    \
-       "resulting state",                                                      \
+       "(string) DEPRECATED: Use 'backing_in_file' and/or 'backing_out_file' " \
+       "instead. Optional backing-store file to pre-load memory and/or store " \
+       "resulting state. If file does not exist, the backing-store will "      \
+       "create it.",                                                           \
        "N/A"},                                                                 \
-      {"addr_range_start", "(uint) Lowest address handled by this memory.",    \
-       "0"},                                                                   \
-      {"addr_range_end", "(uint) Highest address handled by this memory.",     \
-       "uint64_t-1"},                                                          \
-      {"interleave_size",                                                      \
-       "(string) Size of interleaved chunks. E.g., to interleave 8B chunks "   \
-       "among 3 memories, set size=8B, step=24B",                              \
-       "0B"},                                                                  \
-      {"interleave_step",                                                      \
-       "(string) Distance between interleaved chunks. E.g., to interleave 8B " \
-       "chunks among 3 memories, set size=8B, step=24B",                       \
-       "0B"},                                                                  \
+      {"backing_in_file",                                                      \
+       "(string) An optional file to pre-load memory contents from.", ""},     \
+      {"backing_out_file",                                                     \
+       "(string) An optional file to write out memory contents to. Setting "   \
+       "this will also trigger a flush of cache contents prior to writing "    \
+       "the file. May be the same as 'backing_in_file'.",                      \
+       ""},                                                                    \
+      {"backing_out_screen",                                                   \
+       "(bool) Write out memory contents to screen at end of simulation. "     \
+       "Setting this will also trigger a flush of cache contents prior to "    \
+       "writing to screen.",                                                   \
+       "false"},                                                               \
       {"customCmdMemHandler",                                                  \
        "(string) Name of the custom command handler to load", ""}
 
   SST_ELI_DOCUMENT_PARAMS(MEMCONTROLLERKG_ELI_PARAMS)
 
 #define MEMCONTROLLERKG_ELI_PORTS                                              \
-  {"direct_link",                                                              \
-   "Direct connection to a cache/directory controller",                        \
+  {"highlink",                                                                 \
+   "Direct connection to another memHierarchy component or subcomponent. If "  \
+   "a network port is needed, fill the 'highlink' subcomponent slot instead.", \
    {"memHierarchy.MemEventBase"}},                                             \
+      {"direct_link",                                                          \
+       "DEPRECATED: Use 'highlink' subcomponent or port instead. Direct "      \
+       "connection to a cache/directory controller",                           \
+       {"memHierarchy.MemEventBase"}},                                         \
       {"network",                                                              \
-       "Network connection to a cache/directory controller; also request "     \
-       "network for split networks",                                           \
+       "DEPRECATED: Set 'highlink' subcomponent slot to memHierarchy.MemNIC "  \
+       "or memHierarchy.MemNICFour instead. Network connection to a "          \
+       "cache/directory controller; also request network for split networks",  \
        {"memHierarchy.MemRtrEvent"}},                                          \
       {"network_ack",                                                          \
-       "For split networks, ack/response network connection to a "             \
-       "cache/directory controller",                                           \
+       "DEPRECATED: Set 'highlink' subcomponent slot to "                      \
+       "memHierarchy.MemNICFour instead. For split networks, ack/response "    \
+       "network connection to a cache/directory controller",                   \
        {"memHierarchy.MemRtrEvent"}},                                          \
       {"network_fwd",                                                          \
-       "For split networks, forward request network connection to a "          \
-       "cache/directory controller",                                           \
+       "DEPRECATED: Set 'highlink' subcomponent slot to "                      \
+       "memHierarchy.MemNICFour instead. For split networks, forward request " \
+       "network connection to a cache/directory controller",                   \
        {"memHierarchy.MemRtrEvent"}},                                          \
       {"network_data",                                                         \
-       "For split networks, data network connection to a cache/directory "     \
-       "controller",                                                           \
+       "DEPRECATED: Set 'highlink' subcomponent slot to "                      \
+       "memHierarchy.MemNICFour instead. For split networks, data network "    \
+       "connection to a cache/directory controller",                           \
        {"memHierarchy.MemRtrEvent"}},                                          \
   {                                                                            \
     "cube_link",                                                               \
@@ -141,11 +169,18 @@ public:
        "SST::MemHierarchy::CustomCmdMemHandler"},                              \
       {"listener",                                                             \
        "Optional listeners to gather statistics, create traces, etc. "         \
-       "Multiple "                                                             \
-       "listeners supported.",                                                 \
+       "Multiple listeners supported.",                                        \
        "SST::MemHierarchy::CacheListener"},                                    \
+      {"highlink",                                                             \
+       "CPU-side port manager (e.g., link to caches/cpu). If used, do not "    \
+       "connect the 'highlink' port and connect the subcomponent's port(s) "   \
+       "instead. Defaults to 'memHierarchy.MemLink' if the 'highlink' port "   \
+       "is used instead.",                                                     \
+       "SST::MemHierarchy.MemLinkBase"},                                       \
       {"cpulink",                                                              \
-       "CPU-side link manager (e.g., to caches/cpu). Defaults to MemLink.",    \
+       "DEPRECATED: Renamed to 'highlink' for naming consistency. CPU-side "   \
+       "link manager (e.g., towards caches/cpu). A common setting for "        \
+       "network connections is 'memHierarchy.MemNIC'.",                        \
        "SST::MemHierarchy::MemLinkBase"},                                      \
       {"forwardlink", "forwarding link for PIM initiated requests", ""}
 
@@ -155,11 +190,12 @@ public:
   typedef uint64_t ReqId;
 
   MemControllerKG(ComponentId_t id, Params &params);
-  void init(unsigned int) override;
-  void setup() override;
+  virtual void init(unsigned int phase) override;
+  virtual void setup() override;
+  virtual void complete(unsigned int phase) override;
   void finish() override;
 
-  void handleMemResponse(SST::Event::id_type id, uint32_t flags);
+  virtual void handleMemResponse(SST::Event::id_type id, uint32_t flags);
 
   SST::Cycle_t turnClockOn();
 
@@ -170,10 +206,12 @@ public:
   virtual void handlePIMEvent(SST::Event *);
   virtual void handleFLinkEvent(SST::Event *);
 
-protected:
-  MemControllerKG(); // for serialization only
+  // Serialization
+  MemControllerKG();
+  void serialize_order(SST::Core::Serialization::serializer &ser) override;
+ImplementSerializable(SST::MemHierarchy::MemControllerKG)
 
-  virtual ~MemControllerKG() {
+    protected : virtual ~MemControllerKG() {
     if (backing_)
       delete backing_;
   }
@@ -204,7 +242,9 @@ protected:
   unsigned dlevel;
 
   MemBackendConvertor *memBackendConvertor_;
+
   Backend::Backing *backing_;
+  std::string backing_outfile_;
 
   MemLinkBase *link_ = nullptr; // Link to the rest of memHierarchy
   MemLinkBase *flink_ =
@@ -220,6 +260,9 @@ protected:
   void writeData(MemEvent *);
   void readData(MemEvent *);
 
+  std::string checkpointDir_;
+  enum { NO_CHECKPOINT, CHECKPOINT_LOAD, CHECKPOINT_SAVE } checkpoint_;
+
   size_t memSize_;
 
   bool clockOn_;
@@ -233,14 +276,14 @@ protected:
   Addr translateToLocal(Addr addr);
   Addr translateToGlobal(Addr addr);
 
-  Clock::Handler<MemControllerKG> *clockHandler_;
-  TimeConverter *clockTimeBase_;
+  Clock::HandlerBase *clockHandler_;
+  TimeConverter clockTimeBase_;
 
   CustomCmdMemHandler *customCommandHandler_;
 
   /* Debug -triggered by output.fatal() and/or SIGUSR2 */
-  void printStatus(Output &out) override;
-  void emergencyShutdown() override;
+  virtual void printStatus(Output &out) override;
+  virtual void emergencyShutdown() override;
 
   void printDataValue(Addr addr, std::vector<uint8_t> *data, bool set);
 
@@ -251,6 +294,9 @@ private:
   std::map<SST::Event::id_type, MemEventBase *> forwardedEvents_;
 
   void handleCustomEvent(MemEventBase *ev);
+
+  bool backing_outscreen_;
+
   void handleForwardedEvent(MemEventBase *ev);
 };
 
